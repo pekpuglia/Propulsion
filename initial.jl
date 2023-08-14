@@ -6,6 +6,8 @@ using Unitful, NonlinearSolve, Parameters
     T
 end
 
+dof(::Type{ThermodynamicProperties}) = 2
+
 const Rmolar = 8.3144598u"J/mol/K"
 
 function residues(;P, z, T)
@@ -23,7 +25,7 @@ function solveTP(;kwargs...)
     #https://www.geeksforgeeks.org/sets-in-julia/
     missingvar = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)[1]
 
-    prob = NonlinearProblem((value, params) -> residues(;Dict(missingvar => value, kwargs...)...), 1.0)
+    prob = NonlinearProblem((value, p) -> residues(;Dict(missingvar => value, kwargs...)...), 1.0, p=())
     sol = solve(prob, NewtonRaphson())
 
     ThermodynamicProperties(;
