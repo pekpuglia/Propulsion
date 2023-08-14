@@ -15,9 +15,9 @@ function residues(;P, z, T)
     P - z*T*ustrip(u"J/mol/K", Rmolar)
 end
 
-function solveTP(;kwargs...)
-    allvars = fieldnames(ThermodynamicProperties)
-    if length(kwargs) != dof(ThermodynamicProperties)
+function solve_params(T::Type; kwargs...)
+    allvars = fieldnames(T)
+    if length(kwargs) != dof(T)
         error("2 thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
     end
     if any([!(k in allvars) for k in keys(kwargs)])
@@ -35,7 +35,7 @@ function solveTP(;kwargs...)
     
             sol = solve(prob, NewtonRaphson())
 
-    ThermodynamicProperties(;
+    T(;
         Dict(
             Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
             Dict(k => Float64(v) for (k, v) in kwargs)...
@@ -74,7 +74,7 @@ struct Quasi1dimflowProperties
     Astar
 end
 ##
-solveTP(P= 1.0, T = 10.0)
+solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
 #assume que kwargs tá completo
 # function residues(;kwargs...)
 #     p = kwargs[:p]
