@@ -1,24 +1,30 @@
-using Unitful, NonlinearSolve, Parameters
+using Unitful, NonlinearSolve
 ##
-@with_kw struct ThermodynamicProperties
+struct ThermodynamicProperties
     P
     z
     T
 end
 
+function ThermodynamicProperties(; P, z, T)
+    ThermodynamicProperties(P, z, T)
+end
+
+#garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{ThermodynamicProperties}) = 2
+
+variables(::Type{ThermodynamicProperties}) = fieldnames(ThermodynamicProperties)
 
 const Rmolar = 8.3144598u"J/mol/K"
 
-#garantir length(residues) + dof = length(fieldnames)?
-function residues(;P, z, T)
-    P - z*T*ustrip(u"J/mol/K", Rmolar)
+function residues(::Type{ThermodynamicProperties};P, z, T)
+    [P - z*T*ustrip(u"J/mol/K", Rmolar)]
 end
 
 function solve_params(T::Type; kwargs...)
-    allvars = fieldnames(T)
+    allvars = variables(T)
     if length(kwargs) != dof(T)
-        error("2 thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
+        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
     end
     if any([!(k in allvars) for k in keys(kwargs)])
         error("expected keys from $allvars, got: $(keys(kwargs)) ")
@@ -27,11 +33,11 @@ function solve_params(T::Type; kwargs...)
     missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
 
     prob = NonlinearProblem(
-        (values, p) -> residues(;
+        (values, p) -> residues(T;
             Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 kwargs...
-            )...), 1.0, p=())
+            )...), ones(size(missingvars)), p=())
     
             sol = solve(prob, NewtonRaphson())
 
@@ -49,6 +55,23 @@ struct MassProperties
     R
 end
 
+function MassProperties(; MM, rho, R, kwargs...)
+    MassProperties(ThermodynamicProperties(;kwargs...), MM, rho, R)
+end
+
+dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
+
+#ruim!
+variables(::Type{MassProperties}) = (variables(ThermodynamicProperties)..., fieldnames(MassProperties)[2:end]...)
+
+function residues(::Type{MassProperties}; MM, rho, R, kwargs...)
+    [
+        residues(ThermodynamicProperties;kwargs...)
+        R * MM - ustrip(u"J/mol/K", Rmolar)
+        rho - MM * kwargs[:z]
+    ]
+end
+
 struct CalorificProperties
     mp::MassProperties
     cv
@@ -56,6 +79,8 @@ struct CalorificProperties
     gamma
     a
 end
+
+variables(::Type{CalorificProperties}) = (variables(MassProperties)..., fieldnames(CalorificProperties)[2:end]...)
 
 struct FlowProperties
     cp::CalorificProperties
@@ -67,14 +92,24 @@ struct FlowProperties
     a0
 end
 
+variables(::Type{FlowProperties}) = (variables(CalorificProperties)..., fieldnames(FlowProperties)[2:end]...)
+
 struct Quasi1dimflowProperties
     fp::FlowProperties
     mdot
     A
     Astar
 end
+
+variables(::Type{Quasi1dimflowProperties}) = (variables(FlowProperties)..., fieldnames(Quasi1dimflowProperties)[2:end]...)
+
 ##
 solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
+##
+MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
+##
+solve_params(MassProperties, P=1.0, T=10.0, rho = 2.0)
+##
 #assume que kwargs tá completo
 # function residues(;kwargs...)
 #     p = kwargs[:p]
