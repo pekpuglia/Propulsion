@@ -3,6 +3,17 @@ using Unitful, NonlinearSolve
 ##
 abstract type PhysicalProperties end
 
+function (T::Type{<:PhysicalProperties})(;kwargs...)
+    vars = fieldnames(T)
+    types = fieldtypes(T)
+
+    indexes_to_recurse = findall(types .<: PhysicalProperties)
+
+    parameters = cat(((i in indexes_to_recurse) ? types[i](;kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
+    
+    T(parameters...)
+end
+
 dof(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement dof")
 
 function variables(T::Type{<:PhysicalProperties})
@@ -22,10 +33,6 @@ struct ThermodynamicProperties <: PhysicalProperties
     T
 end
 
-function ThermodynamicProperties(; P, z, T)
-    ThermodynamicProperties(P, z, T)
-end
-
 #garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{ThermodynamicProperties}) = 2
 
@@ -40,10 +47,6 @@ struct MassProperties <: PhysicalProperties
     MM
     rho
     R
-end
-
-function MassProperties(; MM, rho, R, kwargs...)
-    MassProperties(ThermodynamicProperties(;kwargs...), MM, rho, R)
 end
 
 dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
@@ -64,6 +67,19 @@ struct CalorificProperties <: PhysicalProperties
     a
 end
 
+dof(::Type{CalorificProperties}) = dof(MassProperties) + 1
+
+function residues(cp::CalorificProperties)
+    [
+        residues(cp.mp)
+        #cp = cv + R
+        cp.cv + cp.mp.R - cp.cp
+        #gamma = cp/cv
+        cp.gamma * cp.cv - cp.cp
+        #a = sqrt(gamma R T)
+        cp.a^2 - cp.gamma * cp.mp.R * cp.mp.tp.T
+    ]
+end
 ##
 struct FlowProperties <: PhysicalProperties
     cp::CalorificProperties
@@ -74,6 +90,24 @@ struct FlowProperties <: PhysicalProperties
     P0
     a0
 end
+
+dof(::Type{FlowProperties}) = dof(CalorificProperties) + 1
+
+function residues(fp::FlowProperties)
+    [
+        residues(fp.cp)
+        #M*a - v
+        fp.M * fp.cp.a - fp.v
+        #1 + (gamma - 1) / 2 * M^2 - T0/T
+        1 + (fp.cp.gamma - 1) / 2 * fp.M^2 - fp.T0 / fp.cp.mp.tp.T
+        #(1 + (gamma -  1) / 2 * M^2)^(gamma/(gamma-1)) - p0/p
+        (1 + (fp.cp.gamma -1) / 2 * fp.M^2) ^ (fp.cp.gamma / (fp.cp.gamma - 1)) - fp.P0 / fp.cp.mp.tp.P
+        #(1 + (gamma -  1) / 2 * M^2)^(  1  /(gamma-1)) - rho0/rho
+        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cp.gamma - 1)) - fp.rho0 / fp.cp.mp.rho
+        #a^2/(gamma-1) + v^2/2 - a0^2/(gamma-1)
+        fp.cp.a^2 / (fp.cp.gamma - 1) + fp.v^2 / 2 - fp.a0^2 / (fp.cp.gamma - 1)
+    ]
+end
 ##
 struct Quasi1dimflowProperties <: PhysicalProperties
     fp::FlowProperties
@@ -82,7 +116,23 @@ struct Quasi1dimflowProperties <: PhysicalProperties
     Astar
 end
 
+dof(::Type{Quasi1dimflowProperties}) = dof(FlowProperties) + 1
+
+function residues(qp::Quasi1dimflowProperties)
+    [
+        residues(qp.fp)
+        qp.mdot - qp.A * qp.fp.v * qp.fp.cp.mp.rho
+        #p 682 anderson
+        (qp.A / qp.Astar) ^ 2 - 
+            1 / qp.fp.M^2 * (
+                2 / (qp.fp.cp.gamma + 1) * (
+                    1 + (qp.fp.cp.gamma - 1) / 2 * qp.fp.M ^ 2
+            )) ^ ((qp.fp.cp.gamma + 1) / (qp.fp.cp.gamma - 1))
+    ]
+end
+
 ##
+#adicionar testes, gerenciar unidades, refatorar essa função
 function solve_params(T::Type; kwargs...)
     allvars = variables(T)
     if length(kwargs) != dof(T)
@@ -110,57 +160,20 @@ function solve_params(T::Type; kwargs...)
         )...)
 end
 ##
+ThermodynamicProperties(P = 1.0, T = 10.0, z= 3.0)
+##
 solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
 ##
 MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
 ##
-solve_params(MassProperties, P=1.0, T=10.0, rho = 2.0)
+#testar que sistema não está super/sub restringido?
+solve_params(MassProperties, P=1.0, MM=10.0, rho = 2.0)
 ##
-#assume que kwargs tá completo
-# function residues(;kwargs...)
-#     p = kwargs[:p]
-#     rho = kwargs[:rho]
-#     T = kwargs[:T]
-#     a = kwargs[:a]
-#     gamma = kwargs[:gamma]
-    
-#     p0 = kwargs[:p0]
-#     rho0 = kwargs[:rho0]
-#     T0 = kwargs[:T0]
-#     a0 = kwargs[:a0]
+CalorificProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0, cv= 1.0, cp=1.0, gamma = 1.0, a = 3.0)
+##
+solve_params(CalorificProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4)
+##
+solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
+##
+solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
 
-#     mdot = kwargs[:mdot]
-#     A = kwargs[:A]
-#     v = kwargs[:v]
-#     M = kwargs[:M]
-    
-    
-
-#     [
-#         1 + (gamma - 1) / 2 * M^2 - T0/T
-#         (1 + (gamma -  1) / 2 * M^2)^(gamma/(gamma-1)) - p0/p
-#         (1 + (gamma -  1) / 2 * M^2)^(  1  /(gamma-1)) - rho0/rho
-#         M*a - v
-#         a^2 - gamma*p/rho
-#         a^2/(gamma-1) + v^2/2 - a0^2/(gamma-1)
-#         mdot - rho*v*A
-#     ]
-# end
-# ##
-# params = Dict(
-#     :p => 1u"Pa",
-#     :rho => 1u"kg/m^3",
-#     :T => 1u"K",
-#     :a => 1u"m/s",
-#     :gamma => 1.1,
-#     :p0 => 2u"Pa",
-#     :rho0 => 2u"kg/m^3",
-#     :T0 => 2u"K",
-#     :a0 => 2u"m/s",
-#     :mdot => 1u"kg/s",
-#     :A => 1u"m^2",
-#     :v => 1u"m/s",
-#     :M => 1
-# )
-# ##
-# residues(;params...)
