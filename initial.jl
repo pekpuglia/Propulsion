@@ -1,6 +1,22 @@
+#https://docs.juliahub.com/Flatten/hpRkL/0.4.0/ - útil?
 using Unitful, NonlinearSolve
 ##
-struct ThermodynamicProperties
+abstract type PhysicalProperties end
+
+dof(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement dof")
+
+function variables(T::Type{<:PhysicalProperties})
+    vars = fieldnames(T)
+    types = fieldtypes(T)
+
+    indexes_to_recurse = findall(types .<: PhysicalProperties)
+
+    cat(((i in indexes_to_recurse) ? variables(types[i]) : var for (i, var) in enumerate(vars))..., dims=1)
+end
+
+residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
+##
+struct ThermodynamicProperties <: PhysicalProperties
     P
     z
     T
@@ -13,42 +29,13 @@ end
 #garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{ThermodynamicProperties}) = 2
 
-variables(::Type{ThermodynamicProperties}) = fieldnames(ThermodynamicProperties)
-
 const Rmolar = 8.3144598u"J/mol/K"
 
-function residues(::Type{ThermodynamicProperties};P, z, T)
-    [P - z*T*ustrip(u"J/mol/K", Rmolar)]
-end
-
-function solve_params(T::Type; kwargs...)
-    allvars = variables(T)
-    if length(kwargs) != dof(T)
-        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
-    end
-    if any([!(k in allvars) for k in keys(kwargs)])
-        error("expected keys from $allvars, got: $(keys(kwargs)) ")
-    end
-    #https://www.geeksforgeeks.org/sets-in-julia/
-    missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
-
-    prob = NonlinearProblem(
-        (values, p) -> residues(T;
-            Dict(
-                Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-                kwargs...
-            )...), ones(size(missingvars)), p=())
-    
-            sol = solve(prob, NewtonRaphson())
-
-    T(;
-        Dict(
-            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-            Dict(k => Float64(v) for (k, v) in kwargs)...
-        )...)
+function residues(tp::ThermodynamicProperties)
+    [tp.P - tp.z*tp.T*ustrip(u"J/mol/K", Rmolar)]
 end
 ##
-struct MassProperties
+struct MassProperties <: PhysicalProperties
     tp::ThermodynamicProperties
     MM
     rho
@@ -61,18 +48,15 @@ end
 
 dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
 
-#ruim!
-variables(::Type{MassProperties}) = (variables(ThermodynamicProperties)..., fieldnames(MassProperties)[2:end]...)
-
-function residues(::Type{MassProperties}; MM, rho, R, kwargs...)
+function residues(mp::MassProperties)
     [
-        residues(ThermodynamicProperties;kwargs...)
-        R * MM - ustrip(u"J/mol/K", Rmolar)
-        rho - MM * kwargs[:z]
+        residues(mp.tp)
+        mp.R * mp.MM - ustrip(u"J/mol/K", Rmolar)
+        mp.rho - mp.MM * mp.tp.z
     ]
 end
-
-struct CalorificProperties
+##
+struct CalorificProperties <: PhysicalProperties
     mp::MassProperties
     cv
     cp
@@ -80,9 +64,8 @@ struct CalorificProperties
     a
 end
 
-variables(::Type{CalorificProperties}) = (variables(MassProperties)..., fieldnames(CalorificProperties)[2:end]...)
-
-struct FlowProperties
+##
+struct FlowProperties <: PhysicalProperties
     cp::CalorificProperties
     M
     v
@@ -91,18 +74,41 @@ struct FlowProperties
     P0
     a0
 end
-
-variables(::Type{FlowProperties}) = (variables(CalorificProperties)..., fieldnames(FlowProperties)[2:end]...)
-
-struct Quasi1dimflowProperties
+##
+struct Quasi1dimflowProperties <: PhysicalProperties
     fp::FlowProperties
     mdot
     A
     Astar
 end
 
-variables(::Type{Quasi1dimflowProperties}) = (variables(FlowProperties)..., fieldnames(Quasi1dimflowProperties)[2:end]...)
+##
+function solve_params(T::Type; kwargs...)
+    allvars = variables(T)
+    if length(kwargs) != dof(T)
+        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
+    end
+    if any([!(k in allvars) for k in keys(kwargs)])
+        error("expected keys from $allvars, got: $(keys(kwargs)) ")
+    end
+    #https://www.geeksforgeeks.org/sets-in-julia/
+    missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
 
+    prob = NonlinearProblem(
+        (values, p) -> residues(T(;
+            Dict(
+                Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
+                kwargs...
+            )...)), ones(size(missingvars)), p=())
+    
+            sol = solve(prob, NewtonRaphson())
+
+    T(;
+        Dict(
+            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+            Dict(k => Float64(v) for (k, v) in kwargs)...
+        )...)
+end
 ##
 solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
 ##
