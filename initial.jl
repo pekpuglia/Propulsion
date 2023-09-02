@@ -146,6 +146,10 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 ##
+#todo
+#aplicar unidades a todas as PhysicalProperties
+#abstrair construtores
+#solver com unidades
 #adicionar testes, gerenciar unidades, refatorar essa função
 function solve_params(T::Type; kwargs...)
     allvars = variables(T)
