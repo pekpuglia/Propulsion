@@ -24,6 +24,8 @@ function variables(T::Type{<:PhysicalProperties})
     cat(((i in indexes_to_recurse) ? variables(types[i]) : var for (i, var) in enumerate(vars))..., dims=1)
 end
 
+units(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement units")
+
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
 ##
 abstract type AbstractUnitMarker end
@@ -46,6 +48,14 @@ end
 
 #garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{<:ThermodynamicProperties}) = 2
+
+units(::Type{ThermodynamicProperties{WithUnits}}) = Dict(
+    :P => u"Pa",
+    :z => u"mol/m^3",
+    :T => u"K"
+)
+
+units(T::Type{ThermodynamicProperties{WithOutUnits}}) = Dict(var => NoUnits for var in variables(T))
 
 const Rmolar = 8.3144598u"J/mol/K"
 
@@ -153,36 +163,43 @@ end
 #adicionar testes, gerenciar unidades, refatorar essa função
 function solve_params(T::Type; kwargs...)
     allvars = variables(T)
+
     if length(kwargs) != dof(T)
         error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
     end
     if any([!(k in allvars) for k in keys(kwargs)])
         error("expected keys from $allvars, got: $(keys(kwargs)) ")
     end
+    
     #https://www.geeksforgeeks.org/sets-in-julia/
     missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
+
+    allunits = units(T)
+
+    unitless_kwargs = Dict(key => ustrip(allunits[key], val) for (key, val) in kwargs)
 
     prob = NonlinearProblem(
         (values, p) -> residues(T(;
             Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-                kwargs...
+                unitless_kwargs...
             )...)), 
         ones(size(missingvars)), p=()
     )
     
     sol = solve(prob, NewtonRaphson())
 
+    #bind units back to variables
     T(;
         Dict(
-            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-            Dict(k => Float64(v) for (k, v) in kwargs)...
+            Dict(missingvar => u*allunits[missingvar] for (missingvar, u) in zip(missingvars, sol.u))...,
+            Dict(k => Float64(v)*allunits[k] for (k, v) in unitless_kwargs)...
         )...)
 end
 ##
 ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
 ##
-solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
+solve_params(ThermodynamicProperties, P= 1.0u"Pa", T = 10.0u"K")
 ##
 MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
 ##
