@@ -45,7 +45,7 @@ function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Un
 end
 
 #garantir length(residues) + dof = length(fieldnames)?
-dof(::Type{ThermodynamicProperties}) = 2
+dof(::Type{<:ThermodynamicProperties}) = 2
 
 const Rmolar = 8.3144598u"J/mol/K"
 
