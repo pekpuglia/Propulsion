@@ -37,14 +37,14 @@ struct ThermodynamicProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProp
     P
     z
     T
+    function ThermodynamicProperties(P::Real, z::Real, T::Real)
+        new{WithOutUnits}(P, z, T)
+    end
+    function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Unitful.Temperature)
+        new{WithUnits}(P, z, T)
+    end
 end
 
-function ThermodynamicProperties(P::Real, z::Real, T::Real)
-    ThermodynamicProperties{WithOutUnits}(P, z, T)
-end
-function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Unitful.Temperature)
-    ThermodynamicProperties{WithUnits}(P, z, T)
-end
 
 #garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{<:ThermodynamicProperties}) = 2
@@ -66,14 +66,33 @@ function residues(tp::ThermodynamicProperties{T}) where T
     [tp.P - tp.z*tp.T*r_molar(T)]
 end
 ##
+@derived_dimension MolarMass Unitful.𝐌/Unitful.𝐍 true
+@derived_dimension SpecificHeatCapacity Unitful.𝐋^2 * Unitful.𝐓^-2 /Unitful.𝚯 true
 struct MassProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
     tp::ThermodynamicProperties{UnitMarker}
     MM
     rho
     R
+    function MassProperties(tp::ThermodynamicProperties{WithOutUnits}, MM::Real, rho::Real, R::Real)
+        new{WithOutUnits}(tp, MM, rho, R)
+    end
+    function MassProperties(tp::ThermodynamicProperties{WithUnits}, MM::MolarMass, rho::Unitful.Density, R::SpecificHeatCapacity)
+        new{WithUnits}(tp, MM, rho, R)
+    end
 end
 
 dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
+
+units(::Type{MassProperties{WithUnits}}) = Dict(
+    :MM => u"kg/mol",
+    :rho => u"kg/m^3",
+    :R => u"J/kg/K",
+    units(ThermodynamicProperties{WithUnits})...
+)
+
+units(T::Type{MassProperties{WithOutUnits}}) = Dict(
+    var => NoUnits for var in variables(T)
+)
 
 function residues(mp::MassProperties{T}) where T
     [
@@ -174,7 +193,12 @@ function solve_params(T::Type; kwargs...)
     #https://www.geeksforgeeks.org/sets-in-julia/
     missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
 
-    allunits = units(T)
+    #decide if solver should use units or not
+    if all(typeof.(values(kwargs) |> collect) .<: Real)
+        allunits = units(T{WithOutUnits})
+    else
+        allunits = units(T{WithUnits})
+    end
 
     unitless_kwargs = Dict(key => ustrip(allunits[key], val) for (key, val) in kwargs)
 
@@ -199,12 +223,18 @@ end
 ##
 ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
 ##
+solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
+##
 solve_params(ThermodynamicProperties, P= 1.0u"Pa", T = 10.0u"K")
 ##
 MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
 ##
+MassProperties(; MM = 1u"g/mol", rho = 2u"kg/cm^3", R = 3u"kJ/kg/K", P = 1.0u"Pa", T = 10.0u"K", z= 3.0u"mol/mm^3")
+##
 #testar que sistema não está super/sub restringido?
 solve_params(MassProperties, P=1.0, MM=10.0, rho = 2.0)
+##
+solve_params(MassProperties, P=1.0u"Pa", MM=10.0u"g/mol", rho = 2.0u"kg/m^3")
 ##
 CalorificProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0, cv= 1.0, cp=1.0, gamma = 1.0, a = 3.0)
 ##
