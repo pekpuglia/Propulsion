@@ -10,7 +10,6 @@ function (T::Type{<:PhysicalProperties})(;kwargs...)
     indexes_to_recurse = findall(types .<: PhysicalProperties)
 
     parameters = cat(((i in indexes_to_recurse) ? types[i](;kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
-    
     T(parameters...)
 end
 
@@ -36,11 +35,11 @@ struct ThermodynamicProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProp
     P
     z
     T
-    function ThermodynamicProperties(P::TP, z::Tz, T::TT) where {TP <: Unitful.AbstractQuantity, Tz <: Unitful.AbstractQuantity, TT <: Unitful.AbstractQuantity}
-        new{WithUnits}(P, z, T)
-    end
     function ThermodynamicProperties(P::Real, z::Real, T::Real)
         new{WithOutUnits}(P, z, T)
+    end
+    function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Unitful.Temperature)
+        new{WithUnits}(P, z, T)
     end
 end
 
@@ -218,4 +217,4 @@ residues(Quasi1dimflowProperties(
 unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
 plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
 ##
-should_fail = ThermodynamicProperties(1, 1.0, 1.0u"K")
+should_fail = ThermodynamicProperties(1u"Pa", 1.0, 1.0)
