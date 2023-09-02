@@ -39,7 +39,7 @@ dof(::Type{ThermodynamicProperties}) = 2
 const Rmolar = 8.3144598u"J/mol/K"
 
 function residues(tp::ThermodynamicProperties)
-    [tp.P - tp.z*tp.T*ustrip(u"J/mol/K", Rmolar)]
+    [tp.P - tp.z*tp.T*Rmolar]
 end
 ##
 struct MassProperties <: PhysicalProperties
@@ -54,7 +54,7 @@ dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
 function residues(mp::MassProperties)
     [
         residues(mp.tp)
-        mp.R * mp.MM - ustrip(u"J/mol/K", Rmolar)
+        mp.R * mp.MM - Rmolar
         mp.rho - mp.MM * mp.tp.z
     ]
 end
@@ -149,9 +149,11 @@ function solve_params(T::Type; kwargs...)
             Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 kwargs...
-            )...)), ones(size(missingvars)), p=())
+            )...)), 
+        ones(size(missingvars)), p=()
+    )
     
-            sol = solve(prob, NewtonRaphson())
+    sol = solve(prob, NewtonRaphson())
 
     T(;
         Dict(
@@ -175,5 +177,26 @@ solve_params(CalorificProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4)
 ##
 solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
 ##
-solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
-
+q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
+##
+residues(Quasi1dimflowProperties(;
+    P = (q1dparams.fp.cp.mp.tp.P)u"Pa",
+    T = (q1dparams.fp.cp.mp.tp.T)u"K",
+    z = (q1dparams.fp.cp.mp.tp.z)u"mol/m^3",
+    rho = (q1dparams.fp.cp.mp.rho)u"kg/m^3",
+    MM = (q1dparams.fp.cp.mp.MM)u"kg/mol",
+    R = (q1dparams.fp.cp.mp.R)u"J/kg/K",
+    a = (q1dparams.fp.cp.a)u"m/s",
+    cp = (q1dparams.fp.cp.cp)u"J/kg/K",
+    cv = (q1dparams.fp.cp.cv)u"J/kg/K",
+    gamma = (q1dparams.fp.cp.gamma),
+    M = (q1dparams.fp.M),
+    a0 = (q1dparams.fp.a0)u"m/s",
+    P0 = (q1dparams.fp.P0)u"Pa",
+    rho0 = (q1dparams.fp.rho0)u"kg/m^3",
+    T0 = (q1dparams.fp.T0)u"K",
+    v = (q1dparams.fp.v)u"m/s",
+    A = (q1dparams.A)u"m^2",
+    Astar = (q1dparams.Astar)u"m^2",
+    mdot = (q1dparams.mdot)u"kg/s"
+))
