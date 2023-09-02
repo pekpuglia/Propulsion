@@ -24,7 +24,10 @@ function variables(T::Type{<:PhysicalProperties})
     cat(((i in indexes_to_recurse) ? variables(types[i]) : var for (i, var) in enumerate(vars))..., dims=1)
 end
 
-units(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement units")
+# units(::Type) = error("PhysicalProperties types must implement units")
+
+#melhorar
+units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(T))
 
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
 ##
@@ -55,7 +58,7 @@ units(::Type{ThermodynamicProperties{WithUnits}}) = Dict(
     :T => u"K"
 )
 
-units(T::Type{ThermodynamicProperties{WithOutUnits}}) = Dict(var => NoUnits for var in variables(T))
+# units(T::Type{ThermodynamicProperties{WithOutUnits}}) = Dict(var => NoUnits for var in variables(T))
 
 const Rmolar = 8.3144598u"J/mol/K"
 
@@ -90,9 +93,9 @@ units(::Type{MassProperties{WithUnits}}) = Dict(
     units(ThermodynamicProperties{WithUnits})...
 )
 
-units(T::Type{MassProperties{WithOutUnits}}) = Dict(
-    var => NoUnits for var in variables(T)
-)
+# units(T::Type{MassProperties{WithOutUnits}}) = Dict(
+#     var => NoUnits for var in variables(T)
+# )
 
 function residues(mp::MassProperties{T}) where T
     [
@@ -102,15 +105,33 @@ function residues(mp::MassProperties{T}) where T
     ]
 end
 ##
-struct CalorificProperties <: PhysicalProperties
-    mp::MassProperties
+struct CalorificProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
+    mp::MassProperties{UnitMarker}
     cv
     cp
     gamma
     a
+    function CalorificProperties(mp::MassProperties{WithOutUnits}, cv::Real, cp::Real, gamma::Real, a::Real)
+        new{WithOutUnits}(mp, cv, cp, gamma, a)
+    end
+    function CalorificProperties(mp::MassProperties{WithUnits}, cv::SpecificHeatCapacity, cp::SpecificHeatCapacity, gamma::Real, a::Unitful.Velocity)
+        new{WithUnits}(mp, cv, cp, gamma, a)
+    end
 end
 
 dof(::Type{CalorificProperties}) = dof(MassProperties) + 1
+
+units(::Type{CalorificProperties{WithUnits}}) = Dict(
+    :cv => u"J/kg/K",
+    :cp => u"J/kg/K",
+    :gamma => NoUnits,
+    :a => u"m/s",
+    units(MassProperties{WithUnits})...
+)
+
+# units(T::Type{CalorificProperties{WithOutUnits}}) = Dict(
+#     var => NoUnits for var in variables(T)
+# )
 
 function residues(cp::CalorificProperties)
     [
@@ -124,17 +145,36 @@ function residues(cp::CalorificProperties)
     ]
 end
 ##
-struct FlowProperties <: PhysicalProperties
-    cp::CalorificProperties
+struct FlowProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
+    cp::CalorificProperties{UnitMarker}
     M
     v
     T0
     rho0
     P0
     a0
+    function FlowProperties(cp::CalorificProperties{WithOutUnits}, 
+        M::Real, v::Real, T0::Real, rho0::Real, P0::Real, a0::Real)
+        new{WithOutUnits}(cp, M, v, T0, rho0, P0, a0)
+    end
+    function FlowProperties(cp::CalorificProperties{WithUnits}, 
+        M::Real, v::Unitful.Velocity, T0::Unitful.Temperature, 
+        rho0::Unitful.Density, P0::Unitful.Pressure, a0::Unitful.Velocity)
+        new{WithUnits}(cp, M, v, T0, rho0, P0, a0)
+    end
 end
 
 dof(::Type{FlowProperties}) = dof(CalorificProperties) + 1
+
+units(::Type{FlowProperties{WithUnits}}) = Dict(
+    :M => NoUnits,
+    :v => u"m/s",
+    :T0 => u"K",
+    :rho0 => u"kg/m^3",
+    :P0 => u"Pa",
+    :a0 => u"m/s",
+    units(CalorificProperties{WithUnits})...
+)
 
 function residues(fp::FlowProperties)
     [
@@ -152,14 +192,28 @@ function residues(fp::FlowProperties)
     ]
 end
 ##
-struct Quasi1dimflowProperties <: PhysicalProperties
-    fp::FlowProperties
+struct Quasi1dimflowProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
+    fp::FlowProperties{UnitMarker}
     mdot
     A
     Astar
+    function Quasi1dimflowProperties(fp::FlowProperties{WithOutUnits}, mdot::Real, A::Real, Astar::Real)
+        new{WithOutUnits}(fp, mdot, A, Astar)
+    end
+    function Quasi1dimflowProperties(fp::FlowProperties{WithUnits}, mdot::Unitful.MassFlow, 
+        A::Unitful.Area, Astar::Unitful.Area)
+        new{WithUnits}(fp, mdot, A, Astar)
+    end
 end
 
 dof(::Type{Quasi1dimflowProperties}) = dof(FlowProperties) + 1
+
+units(::Type{Quasi1dimflowProperties{WithUnits}}) = Dict(
+    :mdot => u"kg/s",
+    :A => u"m^2",
+    :Astar => u"m^2",
+    units(FlowProperties{WithUnits})...
+)
 
 function residues(qp::Quasi1dimflowProperties)
     [
@@ -176,10 +230,8 @@ end
 
 ##
 #todo
-#aplicar unidades a todas as PhysicalProperties
 #abstrair construtores
-#solver com unidades
-#adicionar testes, gerenciar unidades, refatorar essa função
+#adicionar testes, refatorar essa função
 function solve_params(T::Type; kwargs...)
     allvars = variables(T)
 
