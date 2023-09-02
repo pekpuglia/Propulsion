@@ -38,8 +38,11 @@ dof(::Type{ThermodynamicProperties}) = 2
 
 const Rmolar = 8.3144598u"J/mol/K"
 
+unit_adapter(::Type, val) = ustrip(val)
+unit_adapter(T::Type{<:Quantity}, val) = uconvert(unit(T), val)
+
 function residues(tp::ThermodynamicProperties)
-    [tp.P - tp.z*tp.T*Rmolar]
+    [tp.P - unit_adapter(typeof(tp.P), tp.z*tp.T*Rmolar)]
 end
 ##
 struct MassProperties <: PhysicalProperties
@@ -54,7 +57,7 @@ dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
 function residues(mp::MassProperties)
     [
         residues(mp.tp)
-        mp.R * mp.MM - Rmolar
+        mp.R * mp.MM - unit_adapter(typeof(mp.R*mp.MM), Rmolar)
         mp.rho - mp.MM * mp.tp.z
     ]
 end
@@ -162,7 +165,7 @@ function solve_params(T::Type; kwargs...)
         )...)
 end
 ##
-ThermodynamicProperties(P = 1.0, T = 10.0, z= 3.0)
+ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
 ##
 solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
 ##
@@ -179,7 +182,7 @@ solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
 ##
 q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
 ##
-residues(Quasi1dimflowProperties(;
+residues(Quasi1dimflowProperties(
     P = (q1dparams.fp.cp.mp.tp.P)u"Pa",
     T = (q1dparams.fp.cp.mp.tp.T)u"K",
     z = (q1dparams.fp.cp.mp.tp.z)u"mol/m^3",
@@ -200,3 +203,8 @@ residues(Quasi1dimflowProperties(;
     Astar = (q1dparams.Astar)u"m^2",
     mdot = (q1dparams.mdot)u"kg/s"
 ))
+##
+unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
+plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
+##
+should_fail = ThermodynamicProperties(1, 1.0, 1.0u"K")
