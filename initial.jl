@@ -27,10 +27,21 @@ end
 
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
 ##
-struct ThermodynamicProperties <: PhysicalProperties
+abstract type AbstractUnitMarker end
+
+struct WithUnits <: AbstractUnitMarker end
+struct WithOutUnits <: AbstractUnitMarker end
+
+struct ThermodynamicProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
     P
     z
     T
+    function ThermodynamicProperties(P::TP, z::Tz, T::TT) where {TP <: Unitful.AbstractQuantity, Tz <: Unitful.AbstractQuantity, TT <: Unitful.AbstractQuantity}
+        new{WithUnits}(P, z, T)
+    end
+    function ThermodynamicProperties(P::Real, z::Real, T::Real)
+        new{WithOutUnits}(P, z, T)
+    end
 end
 
 #garantir length(residues) + dof = length(fieldnames)?
@@ -38,15 +49,15 @@ dof(::Type{ThermodynamicProperties}) = 2
 
 const Rmolar = 8.3144598u"J/mol/K"
 
-unit_adapter(::Type, val) = ustrip(val)
-unit_adapter(T::Type{<:Quantity}, val) = uconvert(unit(T), val)
+r_molar(::Type{WithUnits}) = Rmolar
+r_molar(::Type{WithOutUnits}) = ustrip(u"J/mol/K", Rmolar)
 
-function residues(tp::ThermodynamicProperties)
-    [tp.P - unit_adapter(typeof(tp.P), tp.z*tp.T*Rmolar)]
+function residues(tp::ThermodynamicProperties{T}) where T
+    [tp.P - tp.z*tp.T*r_molar(T)]
 end
 ##
-struct MassProperties <: PhysicalProperties
-    tp::ThermodynamicProperties
+struct MassProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProperties
+    tp::ThermodynamicProperties{UnitMarker}
     MM
     rho
     R
@@ -54,10 +65,10 @@ end
 
 dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
 
-function residues(mp::MassProperties)
+function residues(mp::MassProperties{T}) where T
     [
         residues(mp.tp)
-        mp.R * mp.MM - unit_adapter(typeof(mp.R*mp.MM), Rmolar)
+        mp.R * mp.MM - r_molar(T)
         mp.rho - mp.MM * mp.tp.z
     ]
 end
