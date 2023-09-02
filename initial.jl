@@ -35,12 +35,13 @@ struct ThermodynamicProperties{UnitMarker <: AbstractUnitMarker} <: PhysicalProp
     P
     z
     T
-    function ThermodynamicProperties(P::Real, z::Real, T::Real)
-        new{WithOutUnits}(P, z, T)
-    end
-    function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Unitful.Temperature)
-        new{WithUnits}(P, z, T)
-    end
+end
+
+function ThermodynamicProperties(P::Real, z::Real, T::Real)
+    ThermodynamicProperties{WithOutUnits}(P, z, T)
+end
+function ThermodynamicProperties(P::Unitful.Pressure, z::Unitful.Molarity, T::Unitful.Temperature)
+    ThermodynamicProperties{WithUnits}(P, z, T)
 end
 
 #garantir length(residues) + dof = length(fieldnames)?
