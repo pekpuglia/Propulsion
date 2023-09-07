@@ -273,52 +273,52 @@ function solve_params(T::Type; kwargs...)
         )...)
 end
 ##
-ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
-##
-solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
-##
-solve_params(ThermodynamicProperties, P= 1.0u"Pa", T = 10.0u"K")
-##
-MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
-##
-MassProperties(; MM = 1u"g/mol", rho = 2u"kg/cm^3", R = 3u"kJ/kg/K", P = 1.0u"Pa", T = 10.0u"K", z= 3.0u"mol/mm^3")
-##
-#testar que sistema não está super/sub restringido?
-solve_params(MassProperties, P=1.0, MM=10.0, rho = 2.0)
-##
-solve_params(MassProperties, P=1.0u"Pa", MM=10.0u"g/mol", rho = 2.0u"kg/m^3")
-##
-CalorificProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0, cv= 1.0, cp=1.0, gamma = 1.0, a = 3.0)
-##
-solve_params(CalorificProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4)
-##
-solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
-##
-q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
-##
-residues(Quasi1dimflowProperties(
-    P = (q1dparams.fp.cp.mp.tp.P)u"Pa",
-    T = (q1dparams.fp.cp.mp.tp.T)u"K",
-    z = (q1dparams.fp.cp.mp.tp.z)u"mol/m^3",
-    rho = (q1dparams.fp.cp.mp.rho)u"kg/m^3",
-    MM = (q1dparams.fp.cp.mp.MM)u"kg/mol",
-    R = (q1dparams.fp.cp.mp.R)u"J/kg/K",
-    a = (q1dparams.fp.cp.a)u"m/s",
-    cp = (q1dparams.fp.cp.cp)u"J/kg/K",
-    cv = (q1dparams.fp.cp.cv)u"J/kg/K",
-    gamma = (q1dparams.fp.cp.gamma),
-    M = (q1dparams.fp.M),
-    a0 = (q1dparams.fp.a0)u"m/s",
-    P0 = (q1dparams.fp.P0)u"Pa",
-    rho0 = (q1dparams.fp.rho0)u"kg/m^3",
-    T0 = (q1dparams.fp.T0)u"K",
-    v = (q1dparams.fp.v)u"m/s",
-    A = (q1dparams.A)u"m^2",
-    Astar = (q1dparams.Astar)u"m^2",
-    mdot = (q1dparams.mdot)u"kg/s"
-))
-##
-unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
-plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
-##
-should_fail = ThermodynamicProperties(1u"Pa", 1.0, 1.0)
+# ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
+# ##
+# solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
+# ##
+# solve_params(ThermodynamicProperties, P= 1.0u"Pa", T = 10.0u"K")
+# ##
+# MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
+# ##
+# MassProperties(; MM = 1u"g/mol", rho = 2u"kg/cm^3", R = 3u"kJ/kg/K", P = 1.0u"Pa", T = 10.0u"K", z= 3.0u"mol/mm^3")
+# ##
+# #testar que sistema não está super/sub restringido?
+# solve_params(MassProperties, P=1.0, MM=10.0, rho = 2.0)
+# ##
+# solve_params(MassProperties, P=1.0u"Pa", MM=10.0u"g/mol", rho = 2.0u"kg/m^3")
+# ##
+# CalorificProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0, cv= 1.0, cp=1.0, gamma = 1.0, a = 3.0)
+# ##
+# solve_params(CalorificProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4)
+# ##
+# solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
+# ##
+# q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
+# ##
+# residues(Quasi1dimflowProperties(
+#     P = (q1dparams.fp.cp.mp.tp.P)u"Pa",
+#     T = (q1dparams.fp.cp.mp.tp.T)u"K",
+#     z = (q1dparams.fp.cp.mp.tp.z)u"mol/m^3",
+#     rho = (q1dparams.fp.cp.mp.rho)u"kg/m^3",
+#     MM = (q1dparams.fp.cp.mp.MM)u"kg/mol",
+#     R = (q1dparams.fp.cp.mp.R)u"J/kg/K",
+#     a = (q1dparams.fp.cp.a)u"m/s",
+#     cp = (q1dparams.fp.cp.cp)u"J/kg/K",
+#     cv = (q1dparams.fp.cp.cv)u"J/kg/K",
+#     gamma = (q1dparams.fp.cp.gamma),
+#     M = (q1dparams.fp.M),
+#     a0 = (q1dparams.fp.a0)u"m/s",
+#     P0 = (q1dparams.fp.P0)u"Pa",
+#     rho0 = (q1dparams.fp.rho0)u"kg/m^3",
+#     T0 = (q1dparams.fp.T0)u"K",
+#     v = (q1dparams.fp.v)u"m/s",
+#     A = (q1dparams.A)u"m^2",
+#     Astar = (q1dparams.Astar)u"m^2",
+#     mdot = (q1dparams.mdot)u"kg/s"
+# ))
+# ##
+# unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
+# plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
+# ##
+# should_fail = ThermodynamicProperties(1u"Pa", 1.0, 1.0)
