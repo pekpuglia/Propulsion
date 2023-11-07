@@ -12,7 +12,7 @@ end
 @test test_example_7_6()
 
 function test_example_7_7()
-    solution = solve_params(FlowProperties, P0 = 2220u"lb/ft^2", rho=1455.6u"lb/ft^2", T = 483.04u"Ra", gamma = 1.4)
+    solution = solve_params(FlowProperties, P0 = 2220u"lbf/ft^2", P=1455.6u"lbf/ft^2", T = 483.04u"Ra", gamma = 1.4, R = 287u"J/kg/K")
 
     isapprox(solution.T0, 544.9u"Ra", atol=0.1u"Ra") &&
     isapprox(solution.v, 862u"ft/s", atol=1u"ft/s")
