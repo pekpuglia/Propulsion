@@ -15,9 +15,7 @@ function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
     T(parameters...)
 end
 
-#fix in unit refactor
 function add_units(pp::T, unit_dict) where T <: PhysicalProperties
-
     vars = fieldnames(T)
     types = fieldtypes(T)
     indexes_to_recurse = findall(types .<: PhysicalProperties)
@@ -265,15 +263,14 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
         )...)
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Quantity})
-    #remove in unit refactor
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number})
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
 
     unitless_solution = internal_solver(T, unitless_kwargs)
 
-
+    add_units(unitless_solution, internal_units)
 end
 ##
 #todo
@@ -288,42 +285,7 @@ function (T::Type)(; kwargs...)
         error("expected keys from $allvars, got: $(keys(kwargs)) ")
     end
     
-    #https://www.geeksforgeeks.org/sets-in-julia/
-    missingvars = (setdiff(Set(allvars), Set(keys(kwargs))) |> collect)
-
-    #decide if solver should use units or not
-    if all(typeof.(values(kwargs) |> collect) .<: Real)
-        unitless_kwargs = kwargs
-    else
-        allunits = units(T)
-        unitless_kwargs = Dict(key => ustrip(allunits[key], val) for (key, val) in kwargs)
-    end
-
-    prob = NonlinearProblem(
-        (values, p) -> residues(phys_prop_from_kwargs(T;
-            Dict(
-                Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-                unitless_kwargs...
-            )...)), 
-        ones(size(missingvars)), p=()
-    )
-    
-    sol = solve(prob, NewtonRaphson())
-
-    #bind units back to variables
-    if all(typeof.(values(kwargs) |> collect) .<: Real)
-        phys_prop_from_kwargs(T;
-        Dict(
-            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-            Dict(k => Float64(v) for (k, v) in unitless_kwargs)...
-        )...)
-    else
-        phys_prop_from_kwargs(T;
-        Dict(
-            Dict(missingvar => u*allunits[missingvar] for (missingvar, u) in zip(missingvars, sol.u))...,
-            Dict(k => Float64(v)*allunits[k] for (k, v) in unitless_kwargs)...
-        )...)
-    end
+    internal_solver(T, Dict(kwargs...))
     
 end
 ##
