@@ -16,12 +16,12 @@ function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
 end
 
 #fix in unit refactor
-function add_units(::Type{T}, pp::T, unit_dict) where T <: PhysicalProperties
+function add_units(pp::T, unit_dict) where T <: PhysicalProperties
 
     vars = fieldnames(T)
     types = fieldtypes(T)
     indexes_to_recurse = findall(types .<: PhysicalProperties)
-    parameters = cat(((i in indexes_to_recurse) ? add_units(types[i], getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
+    parameters = cat(((i in indexes_to_recurse) ? add_units(getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
 
     T(parameters...)
 end
@@ -311,11 +311,20 @@ function (T::Type)(; kwargs...)
     sol = solve(prob, NewtonRaphson())
 
     #bind units back to variables
-    phys_prop_from_kwargs(T;
+    if all(typeof.(values(kwargs) |> collect) .<: Real)
+        phys_prop_from_kwargs(T;
+        Dict(
+            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+            Dict(k => Float64(v) for (k, v) in unitless_kwargs)...
+        )...)
+    else
+        phys_prop_from_kwargs(T;
         Dict(
             Dict(missingvar => u*allunits[missingvar] for (missingvar, u) in zip(missingvars, sol.u))...,
             Dict(k => Float64(v)*allunits[k] for (k, v) in unitless_kwargs)...
         )...)
+    end
+    
 end
 ##
 # ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
