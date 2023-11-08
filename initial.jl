@@ -1,5 +1,5 @@
 #https://docs.juliahub.com/Flatten/hpRkL/0.4.0/ - útil?
-using Unitful, NonlinearSolve
+using Revise, Unitful, NonlinearSolve
 ##
 abstract type PhysicalProperties end
 
@@ -14,6 +14,18 @@ function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
     parameters = cat(((i in indexes_to_recurse) ? phys_prop_from_kwargs(types[i];kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
     T(parameters...)
 end
+
+#fix in unit refactor
+function add_units(::Type{T}, pp::T, unit_dict) where T <: PhysicalProperties
+
+    vars = fieldnames(T)
+    types = fieldtypes(T)
+    indexes_to_recurse = findall(types .<: PhysicalProperties)
+    parameters = cat(((i in indexes_to_recurse) ? add_units(types[i], getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
+
+    T(parameters...)
+end
+
 
 dof(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement dof")
 
@@ -230,7 +242,7 @@ function residues(qp::Quasi1dimflowProperties)
     ]
 end
 ##
-function internal_unitless_solver(T::Type, input_data::Dict{Symbol, <:Real})
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
@@ -251,6 +263,17 @@ function internal_unitless_solver(T::Type, input_data::Dict{Symbol, <:Real})
             Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
             Dict(k => Float64(v) for (k, v) in input_data)...
         )...)
+end
+
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Quantity})
+    #remove in unit refactor
+    internal_units = units(T{WithUnits})
+
+    unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
+
+    unitless_solution = internal_solver(T, unitless_kwargs)
+
+
 end
 ##
 #todo
