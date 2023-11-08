@@ -7,9 +7,13 @@ using Test
 
 
 
+############################################################################
+#internal coherence tests
+function test_dof_variable_count()
+    
+end
 
-
-
+@test test_dof_variable_count()
 
 #############################################################################
 # correctness
