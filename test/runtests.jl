@@ -9,11 +9,23 @@ using Test
 
 ############################################################################
 #internal coherence tests
-function test_dof_variable_count()
-    
+function test_dof_variable_count(type)
+    vars = variables(type)
+    dummy_values = ones(size(vars))
+    dummy_instance = phys_prop_from_kwargs(type; Dict(var => dummy_val for (var, dummy_val) in zip(vars, dummy_values))...)
+    res = residues(dummy_instance)
+    length(res) + dof(type) == length(vars)
 end
 
-@test test_dof_variable_count()
+for t in [
+    ThermodynamicProperties,
+    MassProperties,
+    CalorificProperties,
+    FlowProperties,
+    Quasi1dimflowProperties]
+
+    @test test_dof_variable_count(t)
+end
 
 #############################################################################
 # correctness
