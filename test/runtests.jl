@@ -27,12 +27,12 @@ for t in [
     @test test_dof_variable_count(t)
 end
 
-function test_unitless_solver()
-    sol = internal_unitless_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0))
+function test_internal_solver()
+    sol = internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0))
     true
 end
 
-@test test_unitless_solver()
+@test test_internal_solver()
 
 #############################################################################
 # correctness
