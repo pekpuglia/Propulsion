@@ -232,7 +232,6 @@ end
 
 ##
 #todo
-#abstrair construtores
 #adicionar testes, refatorar essa função
 function (T::Type)(; kwargs...)
     allvars = variables(T)
