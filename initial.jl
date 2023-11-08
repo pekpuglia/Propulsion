@@ -1,3 +1,11 @@
+#todo
+#test unit coherence in residues
+#pipe flow
+#sub/supersonic choice - initial guesses depend on the variables
+#more tests
+#normal shocks?
+#actually use this - do As/Ac x Pt/Ps plot
+
 #https://docs.juliahub.com/Flatten/hpRkL/0.4.0/ - útil?
 using Revise, Unitful, NonlinearSolve
 ##
