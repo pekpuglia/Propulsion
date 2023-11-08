@@ -234,7 +234,7 @@ end
 #todo
 #abstrair construtores
 #adicionar testes, refatorar essa função
-function solve_params(T::Type; kwargs...)
+function (T::Type)(; kwargs...)
     allvars = variables(T)
 
     if length(kwargs) != dof(T)
