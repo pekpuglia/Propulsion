@@ -229,7 +229,29 @@ function residues(qp::Quasi1dimflowProperties)
             )) ^ ((qp.fp.cp.gamma + 1) / (qp.fp.cp.gamma - 1))
     ]
 end
+##
+function internal_unitless_solver(T::Type, input_data::Dict{Symbol, <:Real})
+    allvars = variables(T)
 
+    missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
+    
+    prob = NonlinearProblem(
+        (values, p) -> residues(phys_prop_from_kwargs(T;
+            Dict(
+                Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
+                input_data...
+            )...)), 
+        ones(size(missingvars)), p=()
+    )
+
+    sol = solve(prob, NewtonRaphson())
+
+    phys_prop_from_kwargs(T;
+        Dict(
+            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+            Dict(k => Float64(v) for (k, v) in input_data)...
+        )...)
+end
 ##
 #todo
 #adicionar testes, refatorar essa função

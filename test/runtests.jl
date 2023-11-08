@@ -8,7 +8,7 @@ using Test
 
 
 ############################################################################
-#internal coherence tests
+#internal coherence tests/unit tests
 function test_dof_variable_count(type)
     vars = variables(type)
     dummy_values = ones(size(vars))
@@ -26,6 +26,13 @@ for t in [
 
     @test test_dof_variable_count(t)
 end
+
+function test_unitless_solver()
+    sol = internal_unitless_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0))
+    true
+end
+
+@test test_unitless_solver()
 
 #############################################################################
 # correctness
