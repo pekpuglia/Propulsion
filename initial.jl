@@ -3,13 +3,15 @@ using Unitful, NonlinearSolve
 ##
 abstract type PhysicalProperties end
 
-function (T::Type{<:PhysicalProperties})(;kwargs...)
+function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
+
+
     vars = fieldnames(T)
     types = fieldtypes(T)
 
     indexes_to_recurse = findall(types .<: PhysicalProperties)
 
-    parameters = cat(((i in indexes_to_recurse) ? types[i](;kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
+    parameters = cat(((i in indexes_to_recurse) ? phys_prop_from_kwargs(types[i];kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
     T(parameters...)
 end
 
@@ -255,7 +257,7 @@ function solve_params(T::Type; kwargs...)
     unitless_kwargs = Dict(key => ustrip(allunits[key], val) for (key, val) in kwargs)
 
     prob = NonlinearProblem(
-        (values, p) -> residues(T(;
+        (values, p) -> residues(phys_prop_from_kwargs(T;
             Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 unitless_kwargs...
@@ -266,7 +268,7 @@ function solve_params(T::Type; kwargs...)
     sol = solve(prob, NewtonRaphson())
 
     #bind units back to variables
-    T(;
+    phys_prop_from_kwargs(T;
         Dict(
             Dict(missingvar => u*allunits[missingvar] for (missingvar, u) in zip(missingvars, sol.u))...,
             Dict(k => Float64(v)*allunits[k] for (k, v) in unitless_kwargs)...
