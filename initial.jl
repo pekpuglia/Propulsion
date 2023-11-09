@@ -12,8 +12,6 @@ using Revise, Unitful, NonlinearSolve
 abstract type PhysicalProperties end
 
 function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
-
-
     vars = fieldnames(T)
     types = fieldtypes(T)
 
@@ -61,10 +59,6 @@ units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(
 
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
 ##
-# abstract type AbstractUnitMarker end
-
-# struct WithUnits <: AbstractUnitMarker end
-# struct WithOutUnits <: AbstractUnitMarker end
 
 struct ThermodynamicProperties <: PhysicalProperties
     P
@@ -78,8 +72,6 @@ struct ThermodynamicProperties <: PhysicalProperties
     end
 end
 
-
-#garantir length(residues) + dof = length(fieldnames)?
 dof(::Type{<:ThermodynamicProperties}) = 2
 
 units(::Type{ThermodynamicProperties}) = Dict(
@@ -87,8 +79,6 @@ units(::Type{ThermodynamicProperties}) = Dict(
     :z => u"mol/m^3",
     :T => u"K"
 )
-
-# units(T::Type{ThermodynamicProperties{WithOutUnits}}) = Dict(var => NoUnits for var in variables(T))
 
 const Rmolar = 8.3144598u"J/mol/K"
 
@@ -123,10 +113,6 @@ units(::Type{MassProperties}) = Dict(
     units(ThermodynamicProperties)...
 )
 
-# units(T::Type{MassProperties{WithOutUnits}}) = Dict(
-#     var => NoUnits for var in variables(T)
-# )
-
 function residues(mp::MassProperties)
     [
         residues(mp.tp)
@@ -158,10 +144,6 @@ units(::Type{CalorificProperties}) = Dict(
     :a => u"m/s",
     units(MassProperties)...
 )
-
-# units(T::Type{CalorificProperties{WithOutUnits}}) = Dict(
-#     var => NoUnits for var in variables(T)
-# )
 
 function residues(cp::CalorificProperties)
     [
@@ -291,8 +273,6 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number})
     add_units(unitless_solution, internal_units)
 end
 ##
-#todo
-#adicionar testes, refatorar essa função
 function (T::Type)(; kwargs...)
     allvars = variables(T)
 
@@ -306,9 +286,4 @@ function (T::Type)(; kwargs...)
     internal_solver(T, Dict(kwargs...))
     
 end
-##
-#testar que sistema não está super/sub restringido?
-##
-# FlowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
-# ##
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
