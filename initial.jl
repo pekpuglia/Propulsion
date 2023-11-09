@@ -297,31 +297,8 @@ function (T::Type)(; kwargs...)
     
 end
 ##
-# ThermodynamicProperties(P = 1, T = 10.0, z= 3.0)
+#testar que sistema não está super/sub restringido?
+##
+# FlowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
 # ##
-# solve_params(ThermodynamicProperties, P= 1.0, T = 10.0)
-# ##
-# solve_params(ThermodynamicProperties, P= 1.0u"Pa", T = 10.0u"K")
-# ##
-# MassProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0)
-# ##
-# MassProperties(; MM = 1u"g/mol", rho = 2u"kg/cm^3", R = 3u"kJ/kg/K", P = 1.0u"Pa", T = 10.0u"K", z= 3.0u"mol/mm^3")
-# ##
-# #testar que sistema não está super/sub restringido?
-# solve_params(MassProperties, P=1.0, MM=10.0, rho = 2.0)
-# ##
-# solve_params(MassProperties, P=1.0u"Pa", MM=10.0u"g/mol", rho = 2.0u"kg/m^3")
-# ##
-# CalorificProperties(; MM = 1, rho = 2, R = 3, P = 1.0, T = 10.0, z= 3.0, cv= 1.0, cp=1.0, gamma = 1.0, a = 3.0)
-# ##
-# solve_params(CalorificProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4)
-# ##
-# solve_params(FlowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5)
-# ##
-# q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
-# ##
-# ##
-# unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
-# plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
-# ##
-# should_fail = ThermodynamicProperties(1u"Pa", 1.0, 1.0)
+# q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
