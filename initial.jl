@@ -1,6 +1,6 @@
 #todo
-#test unit coherence in residues
 #pipe flow
+#participation matrix
 #sub/supersonic choice - initial guesses depend on the variables
 #more tests
 #normal shocks?
