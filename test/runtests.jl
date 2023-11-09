@@ -4,9 +4,12 @@ using Test
 
 ##############################################################################
 #usage tests
+function test_access_property()
+    mp = MassProperties(P = 1, T = 2, MM = 20)
+    mp.P == 1
+end
 
-
-
+@test test_access_property()
 ############################################################################
 #internal coherence tests/unit tests
 function test_dof_variable_count(type)

@@ -44,7 +44,17 @@ function variables(T::Type{<:PhysicalProperties})
     cat(((i in indexes_to_recurse) ? variables(types[i]) : var for (i, var) in enumerate(vars))..., dims=1)
 end
 
-# units(::Type) = error("PhysicalProperties types must implement units")
+Base.propertynames(::T) where T <: PhysicalProperties = variables(T)
+
+##ONLY WORKS FOR SINGLE RECURSION CASE
+function Base.getproperty(pp::T, s::Symbol) where T <: PhysicalProperties
+    vars = fieldnames(T)
+    types = fieldtypes(T)
+
+    index_to_recurse = findfirst(types .<: PhysicalProperties)
+
+    (s in vars) ? getfield(pp, s) : getproperty(getfield(pp, vars[index_to_recurse]), s)
+end
 
 #melhorar
 units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(T))
