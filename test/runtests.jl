@@ -60,6 +60,12 @@ function test_residue_unit_coherence()
 end
 
 @test test_residue_unit_coherence()
+
+function test_reject_invalid_units()
+    ThermodynamicProperties(P = 1u"Pa", T = 1.0)
+end
+
+@test_throws Unitful.DimensionError test_reject_invalid_units()
 #############################################################################
 # correctness
 
