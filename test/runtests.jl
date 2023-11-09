@@ -34,6 +34,32 @@ end
 
 @test test_internal_solver()
 
+function test_residue_unit_coherence()
+    residues(phys_prop_from_kwargs(Quasi1dimflowProperties,
+        P = 1u"Pa",
+        T = 1u"K",
+        z = 1u"mol/m^3",
+        rho = 1u"kg/m^3",
+        MM = 1u"kg/mol",
+        R = 1u"J/kg/K",
+        a = 1u"m/s",
+        cp = 1u"J/kg/K",
+        cv = 1u"J/kg/K",
+        gamma = 1.4,
+        M = 1.1,
+        a0 = 1u"m/s",
+        P0 = 1u"Pa",
+        rho0 = 1u"kg/m^3",
+        T0 = 1u"K",
+        v = 1u"m/s",
+        A = 1u"m^2",
+        Astar = 1u"m^2",
+        mdot = 1u"kg/s"
+    ))
+    true
+end
+
+@test test_residue_unit_coherence()
 #############################################################################
 # correctness
 

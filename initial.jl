@@ -82,11 +82,11 @@ units(::Type{ThermodynamicProperties}) = Dict(
 
 const Rmolar = 8.3144598u"J/mol/K"
 
-# r_molar(::Type{WithUnits}) = Rmolar
-r_molar() = ustrip(u"J/mol/K", Rmolar)
+r_molar(::Number) = Rmolar
+r_molar(::Real) = ustrip(u"J/mol/K", Rmolar)
 
 function residues(tp::ThermodynamicProperties)
-    [tp.P - tp.z*tp.T*r_molar()]
+    [tp.P - tp.z*tp.T*r_molar(tp.P)]
 end
 ##
 @derived_dimension MolarMass Unitful.𝐌/Unitful.𝐍 true
@@ -120,7 +120,7 @@ units(::Type{MassProperties}) = Dict(
 function residues(mp::MassProperties)
     [
         residues(mp.tp)
-        mp.R * mp.MM - r_molar()
+        mp.R * mp.MM - r_molar(mp.MM)
         mp.rho - mp.MM * mp.tp.z
     ]
 end
@@ -320,27 +320,6 @@ end
 # ##
 # q1dparams = solve_params(Quasi1dimflowProperties, P=1e5, T=10.0, rho = 2.0, gamma = 1.4, M = 1.5, A = 1.0)
 # ##
-# residues(Quasi1dimflowProperties(
-#     P = (q1dparams.fp.cp.mp.tp.P)u"Pa",
-#     T = (q1dparams.fp.cp.mp.tp.T)u"K",
-#     z = (q1dparams.fp.cp.mp.tp.z)u"mol/m^3",
-#     rho = (q1dparams.fp.cp.mp.rho)u"kg/m^3",
-#     MM = (q1dparams.fp.cp.mp.MM)u"kg/mol",
-#     R = (q1dparams.fp.cp.mp.R)u"J/kg/K",
-#     a = (q1dparams.fp.cp.a)u"m/s",
-#     cp = (q1dparams.fp.cp.cp)u"J/kg/K",
-#     cv = (q1dparams.fp.cp.cv)u"J/kg/K",
-#     gamma = (q1dparams.fp.cp.gamma),
-#     M = (q1dparams.fp.M),
-#     a0 = (q1dparams.fp.a0)u"m/s",
-#     P0 = (q1dparams.fp.P0)u"Pa",
-#     rho0 = (q1dparams.fp.rho0)u"kg/m^3",
-#     T0 = (q1dparams.fp.T0)u"K",
-#     v = (q1dparams.fp.v)u"m/s",
-#     A = (q1dparams.A)u"m^2",
-#     Astar = (q1dparams.Astar)u"m^2",
-#     mdot = (q1dparams.mdot)u"kg/s"
-# ))
 # ##
 # unit_thermo_props = ThermodynamicProperties(1u"Pa", 1u"mol/m^3", 1u"K")
 # plain_thermo_props = ThermodynamicProperties(1.0, 1, 1.0)
