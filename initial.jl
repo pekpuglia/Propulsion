@@ -208,11 +208,11 @@ function residues(fp::FlowProperties)
         #M*a - v
         fp.M * fp.cp.a - fp.v
         #1 + (gamma - 1) / 2 * M^2 - T0/T
-        1 + (fp.cp.gamma - 1) / 2 * fp.M^2 - fp.T0 / fp.cp.mp.tp.T
+        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) * fp.cp.mp.tp.T - fp.T0
         #(1 + (gamma -  1) / 2 * M^2)^(gamma/(gamma-1)) - p0/p
-        (1 + (fp.cp.gamma -1) / 2 * fp.M^2) ^ (fp.cp.gamma / (fp.cp.gamma - 1)) - fp.P0 / fp.cp.mp.tp.P
+        ((1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (fp.cp.gamma / (fp.cp.gamma - 1))) * fp.cp.mp.tp.P - fp.P0
         #(1 + (gamma -  1) / 2 * M^2)^(  1  /(gamma-1)) - rho0/rho
-        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cp.gamma - 1)) - fp.rho0 / fp.cp.mp.rho
+        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cp.gamma - 1)) * fp.cp.mp.rho - fp.rho0
         #a^2/(gamma-1) + v^2/2 - a0^2/(gamma-1)
         fp.cp.a^2 / (fp.cp.gamma - 1) + fp.v^2 / 2 - fp.a0^2 / (fp.cp.gamma - 1)
     ]
@@ -246,11 +246,11 @@ function residues(qp::Quasi1dimflowProperties)
         residues(qp.fp)
         qp.mdot - qp.A * qp.fp.v * qp.fp.cp.mp.rho
         #p 682 anderson
-        (qp.A / qp.Astar) ^ 2 - 
-            1 / qp.fp.M^2 * (
+        qp.A * qp.fp.M -
+            qp.Astar * (
                 2 / (qp.fp.cp.gamma + 1) * (
                     1 + (qp.fp.cp.gamma - 1) / 2 * qp.fp.M ^ 2
-            )) ^ ((qp.fp.cp.gamma + 1) / (qp.fp.cp.gamma - 1))
+            )) ^ ((qp.fp.cp.gamma + 1) / 2(qp.fp.cp.gamma - 1))
     ]
 end
 ##
