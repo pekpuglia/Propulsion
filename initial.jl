@@ -290,18 +290,25 @@ end
 function (T::Type)(; kwargs...)
     allvars = variables(T)
 
+    #correct parameters validation
     if any([!(k in allvars) for k in keys(kwargs)])
         error("expected keys from $allvars, got: $(keys(kwargs)) ")
     end
 
+    #dof validation
     if length(kwargs) != dof(T)
         error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
     end
     
-    
+    #over constraint validation - all residue equations have at least one free variable
+    remaining_vars = map(v -> v[v .∉ [keys(kwargs)]], participation_vector(T))
+    if any(isempty.(remaining_vars))
+        over_constrained_equation_variables = participation_vector(T)[isempty.(remaining_vars)][1]
+        error("Over-constrained system. Must not specify $over_constrained_equation_variables all at once")
+    end
 
-    internal_solver(T, Dict(kwargs...))
-    
+
+    internal_solver(T, Dict(kwargs...))    
 end
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
 ##
