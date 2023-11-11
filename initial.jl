@@ -7,7 +7,7 @@
 #actually use this - do As/Ac x Pt/Ps plot
 
 #https://docs.juliahub.com/Flatten/hpRkL/0.4.0/ - útil?
-using Revise, Unitful, NonlinearSolve
+using Revise, Unitful, NonlinearSolve, Symbolics
 ##
 abstract type PhysicalProperties end
 
@@ -58,6 +58,20 @@ end
 units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(T))
 
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
+
+## symbolic analysis tools
+function generate_sym_var_dict(T::Type{<:PhysicalProperties})
+    Dict(var => (@variables $var)[1] for var in variables(T))
+end
+
+function participation_vector(T::Type{<:PhysicalProperties})
+    sym_var_dict = generate_sym_var_dict(T)
+    part_vector_symbolic = Symbolics.get_variables.(residues(phys_prop_from_kwargs(T; sym_var_dict...)))
+    
+    rev_svd = Dict(values(sym_var_dict) .=> keys(sym_var_dict))
+
+    map(v -> getindex.([rev_svd], v), part_vector_symbolic)
+end
 ##
 
 struct ThermodynamicProperties <: PhysicalProperties
@@ -276,14 +290,21 @@ end
 function (T::Type)(; kwargs...)
     allvars = variables(T)
 
-    if length(kwargs) != dof(T)
-        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
-    end
     if any([!(k in allvars) for k in keys(kwargs)])
         error("expected keys from $allvars, got: $(keys(kwargs)) ")
     end
+
+    if length(kwargs) != dof(T)
+        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
+    end
     
+    
+
     internal_solver(T, Dict(kwargs...))
     
 end
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
+##
+#don't work???
+#Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", M=1.5)
+#Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
