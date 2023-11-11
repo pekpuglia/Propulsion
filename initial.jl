@@ -310,34 +310,8 @@ function (T::Type)(; kwargs...)
 
     internal_solver(T, Dict(kwargs...))    
 end
+##
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
-##
-#don't work???
-res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
-dump(res)
-##
-#singular exception
-res = Quasi1dimflowProperties(P = 11, T = 300, R = 287, gamma = 1.4, M=1.5, A=16.11)
-##
-res = Quasi1dimflowProperties(P = 1u"Pa", T = 300u"K", R = 287u"J/kg/K", gamma = 1.4, M=1.5, mdot=1u"kg/s")
-##
-sym_var_dict = generate_sym_var_dict(Quasi1dimflowProperties)
-##
-sym_q1d = phys_prop_from_kwargs(Quasi1dimflowProperties; sym_var_dict...)
-##
-jac = Symbolics.jacobian(residues(sym_q1d), getindex.([sym_var_dict], variables(Quasi1dimflowProperties)))
-##
-input_data = Dict(:P => 1, :T => 300, :R => 287, :gamma => 1.4, :M => 1.5, :mdot => 1)
-##
-missingvars = (setdiff(Set(variables(Quasi1dimflowProperties)), Set(keys(input_data))) |> collect)
-##
-full_input_dict = Dict(
-    Dict(missingvar => 1.0 for missingvar in missingvars)..., 
-    input_data...
-)
-##
-num_jac = getproperty.(substitute(jac, Dict(
-    getindex.([sym_var_dict], variables(Quasi1dimflowProperties)) .=> getindex.([full_input_dict], variables(Quasi1dimflowProperties))
-)), :val)
-##
+# res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
+# res = Quasi1dimflowProperties(P = 100, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
 #Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
