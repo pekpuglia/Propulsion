@@ -167,7 +167,7 @@ function residues(cp::CalorificProperties)
         #gamma = cp/cv
         cp.gamma * cp.cv - cp.cp
         #a = sqrt(gamma R T)
-        cp.a^2 - cp.gamma * cp.mp.R * cp.mp.tp.T
+        cp.a - √(cp.gamma * cp.mp.R * cp.mp.tp.T)
     ]
 end
 ##
