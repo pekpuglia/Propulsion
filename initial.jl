@@ -300,7 +300,7 @@ function (T::Type)(; kwargs...)
         error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
     end
     
-    #over constraint validation - all residue equations have at least one free variable
+    #over constraint validation - all residue equations have at least one free variable - add tests
     remaining_vars = map(v -> v[v .∉ [keys(kwargs)]], participation_vector(T))
     if any(isempty.(remaining_vars))
         over_constrained_equation_variables = participation_vector(T)[isempty.(remaining_vars)][1]
