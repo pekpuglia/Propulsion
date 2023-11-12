@@ -74,8 +74,9 @@ end
 
 #anderson
 function test_flow_properties()
+    #example 7.6
     solution = FlowProperties(P = 1u"atm", T = 320u"K", v = 1000u"m/s", gamma = 1.4, R = 287u"J/kg/K")
-
+    #example 7.7
     solution2 = FlowProperties(P0 = 2220u"lbf/ft^2", P=1455.6u"lbf/ft^2", T = 483.04u"Ra", gamma = 1.4, R = 287u"J/kg/K")
 
     isapprox(solution.T0, 817.8u"K", atol=1e-1u"K") &&
@@ -85,3 +86,14 @@ function test_flow_properties()
 end
 
 @test test_flow_properties()
+
+#Quasi1dimflowProperties tests
+function test_example_10_1()
+    sol = Quasi1dimflowProperties(
+        A = 10.25u"m^2", 
+        Astar=1u"m^2",
+        P0 = 5u"atm",
+        T0 = 600u"Ra",
+        gamma = 1.4,
+        R = 287u"J/kg/K")
+end
