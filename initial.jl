@@ -1,6 +1,6 @@
 #todo
+#solver initial guesses
 #pipe flow
-#participation matrix
 #sub/supersonic choice - initial guesses depend on the variables
 #more tests
 #normal shocks?
@@ -265,7 +265,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
             )...)), 
-        ones(size(missingvars)), p=()
+        3ones(size(missingvars)), p=()
     )
 
     sol = solve(prob, NewtonRaphson())
@@ -287,7 +287,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number})
     add_units(unitless_solution, internal_units)
 end
 ##
-function (T::Type)(; kwargs...)
+function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
 
     #correct parameters validation
@@ -308,10 +308,11 @@ function (T::Type)(; kwargs...)
     end
 
 
-    internal_solver(T, Dict(kwargs...))    
+    internal_solver(T, Dict(kwargs...))
 end
 ##
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
 # res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
 # res = Quasi1dimflowProperties(P = 100, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
 #Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
+##
