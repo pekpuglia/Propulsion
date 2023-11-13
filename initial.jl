@@ -11,6 +11,10 @@ using Revise, Unitful, NonlinearSolve, Symbolics
 ##
 abstract type PhysicalProperties end
 
+function (T::Type{<:PhysicalProperties})(;kwargs...)
+    internal_phys_prop_constructor(T; kwargs...)
+end
+
 function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
     vars = fieldnames(T)
     types = fieldtypes(T)
@@ -265,7 +269,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
             )...)), 
-        3ones(size(missingvars)), p=()
+        ones(size(missingvars)), p=()
     )
 
     sol = solve(prob, NewtonRaphson())
@@ -287,7 +291,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number})
     add_units(unitless_solution, internal_units)
 end
 ##
-function (T::Type{<:PhysicalProperties})(; kwargs...)
+function internal_phys_prop_constructor(T::Type{<:PhysicalProperties}; kwargs...)
     allvars = variables(T)
 
     #correct parameters validation
@@ -311,8 +315,14 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     internal_solver(T, Dict(kwargs...))
 end
 ##
-# q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
+# # needs supersonic/subsonic spec???
+q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
+# ##
+# q1dparams = Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
+# ##
+# q1dparams = Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
+# ##
+# #doesn't need supersonic/subsonic spec
 # res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
 # res = Quasi1dimflowProperties(P = 100, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
-#Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
 ##
