@@ -299,29 +299,42 @@ end
 function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
 
+    initial_keys = filter(s -> startswith(string(s), "initial_"), keys(kwargs))
+
+    data_kwargs = filter(p -> p.first ∉ initial_keys, kwargs)
+    initial_kwargs = Dict(
+        Symbol(string(init_key)[9:end]) => kwargs[init_key]
+        for init_key in initial_keys
+    )
+
     #correct parameters validation
-    if any([!(k in allvars) for k in keys(kwargs)])
-        error("expected keys from $allvars, got: $(keys(kwargs)) ")
+    if any([!(k in allvars) for k in keys(data_kwargs)])
+        error("expected keys from $allvars, got: $(keys(data_kwargs)) ")
     end
 
     #dof validation
-    if length(kwargs) != dof(T)
-        error("$(dof(T)) thermodynamic properties needed, $(length(kwargs)) given: $(keys(kwargs))")
+    if length(data_kwargs) != dof(T)
+        error("$(dof(T)) thermodynamic properties needed, $(length(data_kwargs)) given: $(keys(data_kwargs))")
     end
     
     #over constraint validation - all residue equations have at least one free variable - add tests
-    remaining_vars = map(v -> v[v .∉ [keys(kwargs)]], participation_vector(T))
+    remaining_vars = map(v -> v[v .∉ [keys(data_kwargs)]], participation_vector(T))
     if any(isempty.(remaining_vars))
         over_constrained_equation_variables = participation_vector(T)[isempty.(remaining_vars)][1]
         error("Over-constrained system. Must not specify $over_constrained_equation_variables all at once")
     end
 
 
-    internal_solver(T, Dict(kwargs...), Dict())
+    internal_solver(T, data_kwargs, initial_kwargs)
 end
 ##
-# q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)
+#todo:
+#tests with initial value
+#discober when initial guess for M is required
+#wrap and use supersonic::Bool?
+# q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0, initial_M=5)
+# q1dparams.M
 # res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
 # res = Quasi1dimflowProperties(P = 100, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
-#Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2")
 ##
+# Quasi1dimflowProperties(P = 1u"bar", R = 287u"J/kg/K", gamma = 1.4, mdot = 1u"kg/s", T = 300u"K", A=0.3u"m^2", initial_M = 10).M
