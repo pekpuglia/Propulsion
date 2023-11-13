@@ -254,18 +254,25 @@ function residues(qp::Quasi1dimflowProperties)
     ]
 end
 ##
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
+#initial_guesses must be missingvars
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_guesses)
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
+    #missingvars sorted by allvars order
     
+    initial_guesses = [
+        (mv ∈ keys(initial_guesses)) ? initial_guesses[mv] : 1.0
+        for mv in missingvars
+    ]
+
     prob = NonlinearProblem(
         (values, p) -> residues(phys_prop_from_kwargs(T;
             Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
             )...)), 
-        3ones(size(missingvars)), p=()
+        initial_guesses, p=()
     )
 
     sol = solve(prob, NewtonRaphson())
@@ -277,12 +284,14 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real})
         )...)
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number})
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_guesses)
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
 
-    unitless_solution = internal_solver(T, unitless_kwargs)
+    unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in initial_guesses)
+
+    unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses)
 
     add_units(unitless_solution, internal_units)
 end
@@ -308,7 +317,7 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     end
 
 
-    internal_solver(T, Dict(kwargs...))
+    internal_solver(T, Dict(kwargs...), Dict())
 end
 ##
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0)

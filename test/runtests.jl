@@ -31,7 +31,7 @@ for t in [
 end
 
 function test_internal_solver()
-    sol = internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0))
+    sol = internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
     true
 end
 
