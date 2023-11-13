@@ -1,7 +1,6 @@
 #todo
-#solver initial guesses
+#make into proper package
 #pipe flow
-#sub/supersonic choice - initial guesses depend on the variables
 #more tests
 #normal shocks?
 #actually use this - do As/Ac x Pt/Ps plot
