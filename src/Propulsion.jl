@@ -1,4 +1,4 @@
-module propulsion
+module Propulsion
 
 include("physical_properties_base.jl")
 include("physical_properties.jl")

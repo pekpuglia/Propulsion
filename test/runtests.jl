@@ -1,6 +1,6 @@
-include("../src/propulsion.jl")
+include("../src/Propulsion.jl")
 
-using .propulsion
+using .Propulsion
 
 using Test, Unitful
 
@@ -17,7 +17,7 @@ end
 function test_dof_variable_count(type)
     vars = variables(type)
     dummy_values = ones(size(vars))
-    dummy_instance = propulsion.phys_prop_from_kwargs(type; Dict(var => dummy_val for (var, dummy_val) in zip(vars, dummy_values))...)
+    dummy_instance = Propulsion.phys_prop_from_kwargs(type; Dict(var => dummy_val for (var, dummy_val) in zip(vars, dummy_values))...)
     res = residues(dummy_instance)
     length(res) + dof(type) == length(vars)
 end
@@ -33,14 +33,14 @@ for t in [
 end
 
 function test_internal_solver()
-    sol = propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
+    sol = Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
     true
 end
 
 @test test_internal_solver()
 
 function test_residue_unit_coherence()
-    residues(propulsion.phys_prop_from_kwargs(Quasi1dimflowProperties,
+    residues(Propulsion.phys_prop_from_kwargs(Quasi1dimflowProperties,
         P = 1u"Pa",
         T = 1u"K",
         z = 1u"mol/m^3",
