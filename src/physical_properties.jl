@@ -186,6 +186,7 @@ end
 
 #expand for N sections
 #kwarg passing?
+#make XPropertiesProblem and its solution - makes it easy to add N sections with incomplete input
 #test solver
 export NozzleFlowProperties
 struct NozzleFlowProperties <: PhysicalProperties
