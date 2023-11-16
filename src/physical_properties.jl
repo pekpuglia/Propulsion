@@ -183,3 +183,42 @@ function residues(qp::Quasi1dimflowProperties)
             )) ^ ((qp.fp.cp.gamma + 1) / 2(qp.fp.cp.gamma - 1))
     ]
 end
+
+#expand for N sections
+export NozzleFlowPropertiesV2
+struct NozzleFlowPropertiesV2 <: PhysicalProperties
+    sec1::Quasi1dimflowProperties
+    sec2::Quasi1dimflowProperties
+    wall_force
+    function NozzleFlowPropertiesV2(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
+        new(sec1, sec2, F)
+    end
+    function NozzleFlowPropertiesV2(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Unitful.Force)
+        new(sec1, sec2, F)
+    end
+end
+
+dof(::Type{NozzleFlowPropertiesV2}) = dof(Quasi1dimflowProperties) + 1
+
+units(::Type{NozzleFlowPropertiesV2}) = Dict(
+    #repeating units is not needed
+    units(Quasi1dimflowProperties)...,
+    :wall_force => u"N"
+)
+
+function residues(nfp::NozzleFlowPropertiesV2)
+    [
+        residues(nfp.sec1)
+        residues(nfp.sec2)
+        nfp.sec1.gamma - nfp.sec2.gamma
+        nfp.sec1.R - nfp.sec2.R
+        nfp.sec1.Astar - nfp.sec2.Astar
+        nfp.sec1.mdot - nfp.sec2.mdot
+        nfp.sec1.T0 - nfp.sec2.T0
+        nfp.wall_force - (
+            nfp.sec2.mdot * nfp.sec2.v - nfp.sec2.P * nfp.sec2.A
+        ) + (
+            nfp.sec1.mdot * nfp.sec1.v - nfp.sec1.P * nfp.sec1.A
+        )
+    ]
+end
