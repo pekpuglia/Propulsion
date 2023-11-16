@@ -185,28 +185,28 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 #expand for N sections
-export NozzleFlowPropertiesV2
-struct NozzleFlowPropertiesV2 <: PhysicalProperties
+export NozzleFlowProperties
+struct NozzleFlowProperties <: PhysicalProperties
     sec1::Quasi1dimflowProperties
     sec2::Quasi1dimflowProperties
     wall_force
-    function NozzleFlowPropertiesV2(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
+    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
         new(sec1, sec2, F)
     end
-    function NozzleFlowPropertiesV2(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Unitful.Force)
+    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Unitful.Force)
         new(sec1, sec2, F)
     end
 end
 
-dof(::Type{NozzleFlowPropertiesV2}) = dof(Quasi1dimflowProperties) + 1
+dof(::Type{NozzleFlowProperties}) = dof(Quasi1dimflowProperties) + 1
 
-units(::Type{NozzleFlowPropertiesV2}) = Dict(
+units(::Type{NozzleFlowProperties}) = Dict(
     #repeating units is not needed
     units(Quasi1dimflowProperties)...,
     :wall_force => u"N"
 )
 
-function residues(nfp::NozzleFlowPropertiesV2)
+function residues(nfp::NozzleFlowProperties)
     [
         residues(nfp.sec1)
         residues(nfp.sec2)
@@ -221,4 +221,14 @@ function residues(nfp::NozzleFlowPropertiesV2)
             nfp.sec1.mdot * nfp.sec1.v - nfp.sec1.P * nfp.sec1.A
         )
     ]
+end
+
+Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
+
+function Base.getindex(nfp::NozzleFlowProperties, i)
+    if !(i == 1 || i == 2)
+        throw(BoundsError(nfp, i))
+    end
+
+    (i == 1) ? nfp.sec1 : nfp.sec2
 end
