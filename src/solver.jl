@@ -57,16 +57,15 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
         error("expected keys from $allvars, got: $(keys(data_kwargs)) ")
     end
 
-    #dof validation
+    #dof validation - review dof calculation?
     if length(data_kwargs) != dof(T)
         error("$(dof(T)) thermodynamic properties needed, $(length(data_kwargs)) given: $(keys(data_kwargs))")
     end
     
-    #over constraint validation - all residue equations have at least one free variable - add tests
     remaining_vars = map(v -> v[v .∉ [keys(data_kwargs)]], participation_vector(T))
     if any(isempty.(remaining_vars))
         over_constrained_equation_variables = participation_vector(T)[isempty.(remaining_vars)][1]
-        error("Over-constrained system. Must not specify $over_constrained_equation_variables all at once")
+        error("Over-constrained equation. Must not specify $over_constrained_equation_variables all at once")
     end
 
 

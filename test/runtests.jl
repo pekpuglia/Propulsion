@@ -12,6 +12,18 @@ function test_access_property()
 end
 
 @test test_access_property()
+
+function test_reject_invalid_units()
+    ThermodynamicProperties(P = 1u"Pa", T = 1.0)
+end
+
+@test_throws Unitful.DimensionError test_reject_invalid_units()
+
+function test_reject_overconstrained_system()
+    MassProperties(P = 1, z = 1, T = 1)
+end
+
+@test_throws ErrorException test_reject_overconstrained_system()
 ############################################################################
 #internal coherence tests/unit tests
 function test_dof_variable_count(type)
@@ -66,11 +78,6 @@ end
 
 @test test_residue_unit_coherence()
 
-function test_reject_invalid_units()
-    ThermodynamicProperties(P = 1u"Pa", T = 1.0)
-end
-
-@test_throws Unitful.DimensionError test_reject_invalid_units()
 #############################################################################
 # correctness
 
