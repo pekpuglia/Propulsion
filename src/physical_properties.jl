@@ -185,6 +185,8 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 #expand for N sections
+#kwarg passing?
+#test solver
 export NozzleFlowProperties
 struct NozzleFlowProperties <: PhysicalProperties
     sec1::Quasi1dimflowProperties

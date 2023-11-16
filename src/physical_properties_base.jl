@@ -3,6 +3,7 @@ using Unitful, NonlinearSolve, Symbolics
 
 abstract type PhysicalProperties end
 
+#make T -> var dict for convinience
 function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
     vars = fieldnames(T)
     types = fieldtypes(T)
