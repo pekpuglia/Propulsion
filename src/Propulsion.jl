@@ -5,7 +5,6 @@ module Propulsion
 #more tests
 #normal shocks?
 #actually use this - do As/Ac x Pt/Ps plot
-#tests with initial value
 #discober when initial guess for M is required
 #wrap and use supersonic::Bool?
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0, initial_M=5)

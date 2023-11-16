@@ -24,6 +24,21 @@ function test_reject_overconstrained_system()
 end
 
 @test_throws ErrorException test_reject_overconstrained_system()
+
+function test_use_initial_value()
+    q1dparams = Quasi1dimflowProperties(
+        P=1e5, 
+        T=10.0, 
+        rho = 2.0, 
+        gamma = 1.4, 
+        Astar = 0.85, 
+        A = 1.0, 
+        initial_M=5
+    )
+    q1dparams.M > 1
+end
+
+@test test_use_initial_value()
 ############################################################################
 #internal coherence tests/unit tests
 function test_dof_variable_count(type)
