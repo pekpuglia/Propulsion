@@ -42,9 +42,11 @@ function Base.getproperty(pp::T, s::Symbol) where T <: PhysicalProperties
     vars = fieldnames(T)
     types = fieldtypes(T)
 
-    index_to_recurse = findfirst(types .<: PhysicalProperties)
+    index_to_recurse = findall(types .<: PhysicalProperties)
 
-    (s in vars) ? getfield(pp, s) : getproperty(getfield(pp, vars[index_to_recurse]), s)
+    @assert length(index_to_recurse) <= 1 "Cannot delegate property access due to ambiguity in field name $s"
+
+    (s in vars) ? getfield(pp, s) : getproperty(getfield(pp, vars[index_to_recurse[1]]), s)
 end
 
 #melhorar
