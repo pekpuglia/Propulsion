@@ -55,7 +55,7 @@ for t in [
     CalorificProperties,
     FlowProperties,
     Quasi1dimflowProperties,
-    NozzleFlowPropertiesV2]
+    NozzleFlowProperties]
 
     @test test_dof_variable_count(t)
 end
