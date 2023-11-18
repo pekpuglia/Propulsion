@@ -67,33 +67,6 @@ end
 
 @test test_internal_solver()
 
-function test_residue_unit_coherence()
-    residues(Propulsion.phys_prop_from_kwargs(Quasi1dimflowProperties,
-        P = 1u"Pa",
-        T = 1u"K",
-        z = 1u"mol/m^3",
-        rho = 1u"kg/m^3",
-        MM = 1u"kg/mol",
-        R = 1u"J/kg/K",
-        a = 1u"m/s",
-        cp = 1u"J/kg/K",
-        cv = 1u"J/kg/K",
-        gamma = 1.4,
-        M = 1.1,
-        a0 = 1u"m/s",
-        P0 = 1u"Pa",
-        rho0 = 1u"kg/m^3",
-        T0 = 1u"K",
-        v = 1u"m/s",
-        A = 1u"m^2",
-        Astar = 1u"m^2",
-        mdot = 1u"kg/s"
-    ))
-    true
-end
-
-@test test_residue_unit_coherence()
-
 function test_nozzle_flow_from_kwargs()
     Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
     wall_force = 2u"N",
@@ -140,6 +113,53 @@ function test_nozzle_flow_from_kwargs()
 end
 
 @test test_nozzle_flow_from_kwargs()
+
+function test_residue_unit_coherence()
+    residues(Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
+        wall_force = 2u"N",
+        P_1 = 1u"Pa",
+        T_1 = 1u"K",
+        z_1 = 1u"mol/m^3",
+        rho_1 = 1u"kg/m^3",
+        MM_1 = 1u"kg/mol",
+        R_1 = 1u"J/kg/K",
+        a_1 = 1u"m/s",
+        cp_1 = 1u"J/kg/K",
+        cv_1 = 1u"J/kg/K",
+        gamma_1 = 1.4,
+        M_1 = 1.1,
+        a0_1 = 1u"m/s",
+        P0_1 = 1u"Pa",
+        rho0_1 = 1u"kg/m^3",
+        T0_1 = 1u"K",
+        v_1 = 1u"m/s",
+        A_1 = 1u"m^2",
+        Astar_1 = 1u"m^2",
+        mdot_1 = 1u"kg/s",
+        P_2 = 1u"Pa",
+        T_2 = 1u"K",
+        z_2 = 1u"mol/m^3",
+        rho_2 = 1u"kg/m^3",
+        MM_2 = 1u"kg/mol",
+        R_2 = 1u"J/kg/K",
+        a_2 = 1u"m/s",
+        cp_2 = 1u"J/kg/K",
+        cv_2 = 1u"J/kg/K",
+        gamma_2 = 1.4,
+        M_2 = 1.1,
+        a0_2 = 1u"m/s",
+        P0_2 = 1u"Pa",
+        rho0_2 = 1u"kg/m^3",
+        T0_2 = 1u"K",
+        v_2 = 1u"m/s",
+        A_2 = 1u"m^2",
+        Astar_2 = 1u"m^2",
+        mdot_2 = 1u"kg/s"
+    ))
+    true
+end
+
+@test test_residue_unit_coherence()
 
 #############################################################################
 # correctness
