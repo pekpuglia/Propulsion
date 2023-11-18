@@ -185,9 +185,8 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 #expand for N sections
-#kwarg passing?
-#make XPropertiesProblem and its solution - makes it easy to add N sections with incomplete input
-#test solver
+#refactor
+#test solver !!!!! analyze coherence of input, residues, etc
 export NozzleFlowProperties
 struct NozzleFlowProperties <: PhysicalProperties
     sec1::Quasi1dimflowProperties
