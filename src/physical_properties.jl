@@ -203,9 +203,20 @@ end
 
 dof(::Type{NozzleFlowProperties}) = dof(Quasi1dimflowProperties) + 1
 
+function variables(T::Type{NozzleFlowProperties})
+    [
+        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
+        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
+        :wall_force
+    ]
+end
+
 units(::Type{NozzleFlowProperties}) = Dict(
-    #repeating units is not needed
-    units(Quasi1dimflowProperties)...,
+    Dict(
+        Symbol(string(pair.first)*suff) => pair.second 
+        for pair in Propulsion.units(Quasi1dimflowProperties) 
+        for suff in ["_1", "_2"]
+    )...,
     :wall_force => u"N"
 )
 
@@ -234,4 +245,23 @@ function Base.getindex(nfp::NozzleFlowProperties, i)
     end
 
     (i == 1) ? nfp.sec1 : nfp.sec2
+end
+
+function select_and_remove_kwarg_suffix(suff::String, kwargs)
+    Dict(
+        Symbol(string(pair.first)[1:(end-2)]) => pair.second
+        for pair in filter(x -> endswith(string(x.first), suff), kwargs)
+    )
+end
+
+function phys_prop_from_kwargs(T::Type{NozzleFlowProperties}; kwargs...)
+    
+    kw1 = select_and_remove_kwarg_suffix("_1", kwargs)
+    kw2 = select_and_remove_kwarg_suffix("_2", kwargs)
+
+    NozzleFlowProperties(
+        phys_prop_from_kwargs(Quasi1dimflowProperties; kw1...),
+        phys_prop_from_kwargs(Quasi1dimflowProperties; kw2...),
+        kwargs[:wall_force]
+    )
 end
