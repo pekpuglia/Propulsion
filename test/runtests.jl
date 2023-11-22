@@ -69,7 +69,7 @@ end
 
 function test_nozzle_flow_from_kwargs()
     Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
-    wall_force = 2u"N",
+    F = 2u"N",
     P_1 = 1u"Pa",
     T_1 = 1u"K",
     z_1 = 1u"mol/m^3",
@@ -116,7 +116,7 @@ end
 
 function test_residue_unit_coherence()
     residues(Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
-        wall_force = 2u"N",
+        F = 2u"N",
         P_1 = 1u"Pa",
         T_1 = 1u"K",
         z_1 = 1u"mol/m^3",

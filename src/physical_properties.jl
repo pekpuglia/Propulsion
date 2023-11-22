@@ -218,7 +218,7 @@ units(::Type{NozzleFlowProperties}) = Dict(
     )...,
     :F => u"N"
 )
-
+#set default initial_gamma_2 to 1.4
 function residues(nfp::NozzleFlowProperties)
     [
         residues(nfp.sec1)
