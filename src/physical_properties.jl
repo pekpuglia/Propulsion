@@ -191,7 +191,7 @@ export NozzleFlowProperties
 struct NozzleFlowProperties <: PhysicalProperties
     sec1::Quasi1dimflowProperties
     sec2::Quasi1dimflowProperties
-    wall_force
+    F
     function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
         new(sec1, sec2, F)
     end
@@ -206,7 +206,7 @@ function variables(T::Type{NozzleFlowProperties})
     [
         variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
         variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
-        :wall_force
+        :F
     ]
 end
 
@@ -216,19 +216,19 @@ units(::Type{NozzleFlowProperties}) = Dict(
         for pair in Propulsion.units(Quasi1dimflowProperties) 
         for suff in ["_1", "_2"]
     )...,
-    :wall_force => u"N"
+    :F => u"N"
 )
 
 function residues(nfp::NozzleFlowProperties)
     [
         residues(nfp.sec1)
         residues(nfp.sec2)
-        nfp.sec1.gamma - nfp.sec2.gamma
+        nfp.sec1.fp.cp.gamma - nfp.sec2.fp.cp.gamma
         nfp.sec1.R - nfp.sec2.R
         nfp.sec1.Astar - nfp.sec2.Astar
         nfp.sec1.mdot - nfp.sec2.mdot
         nfp.sec1.T0 - nfp.sec2.T0
-        nfp.wall_force - (
+        nfp.F - (
             nfp.sec2.mdot * nfp.sec2.v - nfp.sec2.P * nfp.sec2.A
         ) + (
             nfp.sec1.mdot * nfp.sec1.v - nfp.sec1.P * nfp.sec1.A
@@ -261,6 +261,6 @@ function phys_prop_from_kwargs(T::Type{NozzleFlowProperties}; kwargs...)
     NozzleFlowProperties(
         phys_prop_from_kwargs(Quasi1dimflowProperties; kw1...),
         phys_prop_from_kwargs(Quasi1dimflowProperties; kw2...),
-        kwargs[:wall_force]
+        kwargs[:F]
     )
 end
