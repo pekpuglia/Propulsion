@@ -47,8 +47,9 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
 
     data_kwargs = filter(p -> p.first ∉ initial_keys, kwargs)
     initial_kwargs = Dict(
-        Symbol(string(init_key)[9:end]) => kwargs[init_key]
-        for init_key in initial_keys
+        default_initial_guesses(T)...,
+        Dict(Symbol(string(init_key)[9:end]) => kwargs[init_key]
+        for init_key in initial_keys)...
     )
 
     #correct parameters validation

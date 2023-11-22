@@ -57,6 +57,8 @@ units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(
 export residues
 residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types must implement residues")
 
+default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
+
 ## symbolic analysis tools
 function generate_sym_var_dict(T::Type{<:PhysicalProperties})
     Dict(var => (@variables $var)[1] for var in variables(T))
