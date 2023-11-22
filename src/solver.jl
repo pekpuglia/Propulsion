@@ -1,12 +1,11 @@
 
 #initial_guesses must be missingvars
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_guesses)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_guesses::Dict)
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
-    #missingvars sorted by allvars order
     
-    initial_guesses = [
+    initial_guesses_vec = [
         (mv ∈ keys(initial_guesses)) ? initial_guesses[mv] : 1.0
         for mv in missingvars
     ]
@@ -17,7 +16,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_gues
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
             )...)), 
-        initial_guesses, p=()
+        initial_guesses_vec, p=()
     )
 
     sol = solve(prob, NewtonRaphson())
@@ -29,7 +28,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_gues
         )...)
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_guesses)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_guesses::Dict)
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
