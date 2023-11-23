@@ -7,11 +7,10 @@ using Test, Unitful
 ##############################################################################
 #usage tests
 function test_access_property()
-    mp = MassProperties(P = 1, T = 2, MM = 20)
-    mp.P == 1
+    MassProperties(P = 1, T = 2, MM = 20)
 end
 
-@test test_access_property()
+@test test_access_property().P == 1
 
 function test_reject_invalid_units()
     ThermodynamicProperties(P = 1u"Pa", T = 1.0)
@@ -26,7 +25,7 @@ end
 @test_throws ErrorException test_reject_overconstrained_system()
 
 function test_use_initial_value()
-    q1dparams = Quasi1dimflowProperties(
+    Quasi1dimflowProperties(
         P=1e5, 
         T=10.0, 
         rho = 2.0, 
@@ -35,10 +34,9 @@ function test_use_initial_value()
         A = 1.0, 
         initial_M=5
     )
-    q1dparams.M > 1
 end
 
-@test test_use_initial_value()
+@test test_use_initial_value().M > 1
 ############################################################################
 #internal coherence tests/unit tests
 function test_dof_variable_count(type)
@@ -49,23 +47,20 @@ function test_dof_variable_count(type)
     length(res) + dof(type) == length(vars)
 end
 
-for t in [
-    ThermodynamicProperties,
-    MassProperties,
-    CalorificProperties,
-    FlowProperties,
-    Quasi1dimflowProperties,
-    NozzleFlowProperties]
+@test test_dof_variable_count(ThermodynamicProperties)
+@test test_dof_variable_count(MassProperties)
+@test test_dof_variable_count(CalorificProperties)
+@test test_dof_variable_count(FlowProperties)
+@test test_dof_variable_count(Quasi1dimflowProperties)
+@test test_dof_variable_count(NozzleFlowProperties)
 
-    @test test_dof_variable_count(t)
-end
 
 function test_internal_solver()
-    sol = Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
-    true
+    Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
 end
 
-@test test_internal_solver()
+#just test it built something
+@test test_internal_solver() isa ThermodynamicProperties
 
 function test_nozzle_flow_from_kwargs()
     Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
@@ -109,10 +104,10 @@ function test_nozzle_flow_from_kwargs()
     Astar_2 = 1u"m^2",
     mdot_2 = 1u"kg/s"
     )
-    true
 end
 
-@test test_nozzle_flow_from_kwargs()
+#testing it didn't error
+@test test_nozzle_flow_from_kwargs() isa NozzleFlowProperties
 
 function test_residue_unit_coherence()
     residues(Propulsion.phys_prop_from_kwargs(NozzleFlowProperties,
@@ -156,10 +151,10 @@ function test_residue_unit_coherence()
         Astar_2 = 1u"m^2",
         mdot_2 = 1u"kg/s"
     ))
-    true
 end
 
-@test test_residue_unit_coherence()
+#testing it didn't error
+@test test_residue_unit_coherence() isa Vector
 
 #############################################################################
 # correctness
@@ -170,18 +165,20 @@ function test_flow_properties()
     solution = FlowProperties(P = 1u"atm", T = 320u"K", v = 1000u"m/s", gamma = 1.4, R = 287u"J/kg/K")
     #example 7.7
     solution2 = FlowProperties(P0 = 2220u"lbf/ft^2", P=1455.6u"lbf/ft^2", T = 483.04u"Ra", gamma = 1.4, R = 287u"J/kg/K")
-
-    isapprox(solution.T0, 817.8u"K", atol=1e-1u"K") &&
-    isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm") &&
-    isapprox(solution2.T0, 544.9u"Ra", atol=0.1u"Ra") &&
-    isapprox(solution2.v, 862u"ft/s", atol=1u"ft/s")
+    solution, solution2
 end
 
-@test test_flow_properties()
+let
+    solution, solution2 = test_flow_properties()
+    @test isapprox(solution.T0, 817.8u"K", atol=1e-1u"K")
+    @test isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm")
+    @test isapprox(solution2.T0, 544.9u"Ra", atol=0.1u"Ra")
+    @test isapprox(solution2.v, 862u"ft/s", atol=1u"ft/s")
+end
 
 #Quasi1dimflowProperties tests
 function test_example_10_1()
-    sol = Quasi1dimflowProperties(
+    Quasi1dimflowProperties(
         A = 10.25u"m^2", 
         Astar=1u"m^2",
         P0 = 5u"atm",
@@ -190,12 +187,13 @@ function test_example_10_1()
         R = 287u"J/kg/K",
         initial_M = 5
     )
-    isapprox(sol.M, 3.95, atol=0.01) &&
-    isapprox(sol.P, 0.035u"atm", atol=1e-3u"atm") &&
-    isapprox(sol.T, 145.6u"Ra", atol=0.1u"Ra")
 end
 
-@test test_example_10_1()
+let sol = test_example_10_1()
+    @test isapprox(sol.M, 3.95, atol=0.01)
+    @test isapprox(sol.P, 0.035u"atm", atol=1e-3u"atm")
+    @test isapprox(sol.T, 145.6u"Ra", atol=0.1u"Ra")
+end
 
 #NozzleFlowProperties test
 function test_example_10_2()
@@ -219,15 +217,19 @@ function test_example_10_2()
         A_2 = 2u"m^2", 
         initial_M_2 = 0.1)
         
-    isapprox(nfp_supersonic[1].P, 0.528u"atm", atol=1e-3u"atm") &&
-    isapprox(nfp_supersonic[1].T, 240u"K", atol=1u"K") &&
-    isapprox(nfp_supersonic[2].M, 2.2, atol=0.1) &&
-    #small numerical difference
-    isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm") &&
-    isapprox(nfp_supersonic[2].T, 146u"K", atol=1u"K") &&
-    isapprox(nfp_subsonic[2].M, 0.3, atol=0.1) &&
-    isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm") &&
-    isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
+    nfp_supersonic, nfp_subsonic
 end
 
-@test test_example_10_2()
+let
+    nfp_supersonic, nfp_subsonic = test_example_10_2()
+    
+    @test isapprox(nfp_supersonic[1].P, 0.528u"atm", atol=1e-3u"atm")
+    @test isapprox(nfp_supersonic[1].T, 240u"K", atol=1u"K")
+    @test isapprox(nfp_supersonic[2].M, 2.2, atol=0.1)
+    #small numerical difference
+    @test isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm")
+    @test isapprox(nfp_supersonic[2].T, 146u"K", atol=1u"K")
+    @test isapprox(nfp_subsonic[2].M, 0.3, atol=0.1)
+    @test isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm")
+    @test isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
+end
