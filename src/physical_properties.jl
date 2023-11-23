@@ -101,7 +101,7 @@ end
 ##
 export FlowProperties
 struct FlowProperties <: PhysicalProperties
-    cp::CalorificProperties
+    cal_prop::CalorificProperties
     M
     v
     T0
@@ -133,17 +133,17 @@ units(::Type{FlowProperties}) = Dict(
 
 function residues(fp::FlowProperties)
     [
-        residues(fp.cp)
+        residues(fp.cal_prop)
         #M*a - v
-        fp.M * fp.cp.a - fp.v
+        fp.M * fp.cal_prop.a - fp.v
         #1 + (gamma - 1) / 2 * M^2 - T0/T
-        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) * fp.cp.mp.tp.T - fp.T0
+        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) * fp.cal_prop.mp.tp.T - fp.T0
         #(1 + (gamma -  1) / 2 * M^2)^(gamma/(gamma-1)) - p0/p
-        ((1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (fp.cp.gamma / (fp.cp.gamma - 1))) * fp.cp.mp.tp.P - fp.P0
+        ((1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (fp.cal_prop.gamma / (fp.cal_prop.gamma - 1))) * fp.cal_prop.mp.tp.P - fp.P0
         #(1 + (gamma -  1) / 2 * M^2)^(  1  /(gamma-1)) - rho0/rho
-        (1 + (fp.cp.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cp.gamma - 1)) * fp.cp.mp.rho - fp.rho0
+        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cal_prop.gamma - 1)) * fp.cal_prop.mp.rho - fp.rho0
         #a^2/(gamma-1) + v^2/2 - a0^2/(gamma-1)
-        fp.cp.a^2 / (fp.cp.gamma - 1) + fp.v^2 / 2 - fp.a0^2 / (fp.cp.gamma - 1)
+        fp.cal_prop.a^2 / (fp.cal_prop.gamma - 1) + fp.v^2 / 2 - fp.a0^2 / (fp.cal_prop.gamma - 1)
     ]
 end
 ##
@@ -174,13 +174,13 @@ units(::Type{Quasi1dimflowProperties}) = Dict(
 function residues(qp::Quasi1dimflowProperties)
     [
         residues(qp.fp)
-        qp.mdot - qp.A * qp.fp.v * qp.fp.cp.mp.rho
+        qp.mdot - qp.A * qp.fp.v * qp.fp.cal_prop.mp.rho
         #p 682 anderson
         qp.A * qp.fp.M -
             qp.Astar * (
-                2 / (qp.fp.cp.gamma + 1) * (
-                    1 + (qp.fp.cp.gamma - 1) / 2 * qp.fp.M ^ 2
-            )) ^ ((qp.fp.cp.gamma + 1) / 2(qp.fp.cp.gamma - 1))
+                2 / (qp.fp.cal_prop.gamma + 1) * (
+                    1 + (qp.fp.cal_prop.gamma - 1) / 2 * qp.fp.M ^ 2
+            )) ^ ((qp.fp.cal_prop.gamma + 1) / 2(qp.fp.cal_prop.gamma - 1))
     ]
 end
 
@@ -223,7 +223,7 @@ function residues(nfp::NozzleFlowProperties)
     [
         residues(nfp.sec1)
         residues(nfp.sec2)
-        nfp.sec1.fp.cp.gamma - nfp.sec2.fp.cp.gamma
+        nfp.sec1.fp.cal_prop.gamma - nfp.sec2.fp.cal_prop.gamma
         nfp.sec1.R - nfp.sec2.R
         nfp.sec1.Astar - nfp.sec2.Astar
         nfp.sec1.mdot - nfp.sec2.mdot

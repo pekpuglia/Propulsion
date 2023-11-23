@@ -19,13 +19,8 @@ function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
     T(parameters...)
 end
 
-function add_units(pp::T, unit_dict) where T <: PhysicalProperties
-    vars = fieldnames(T)
-    types = fieldtypes(T)
-    indexes_to_recurse = findall(types .<: PhysicalProperties)
-    parameters = cat(((i in indexes_to_recurse) ? add_units(getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
-
-    T(parameters...)
+function Base.Dict(pp::PhysicalProperties)
+    Dict(var => getproperty(pp, var) for var in variables(pp))
 end
 
 export dof
@@ -39,6 +34,20 @@ function variables(T::Type{<:PhysicalProperties})
     indexes_to_recurse = findall(types .<: PhysicalProperties)
 
     cat(((i in indexes_to_recurse) ? variables(types[i]) : var for (i, var) in enumerate(vars))..., dims=1)
+end
+
+function add_units(pp::T, unit_dict) where T <: PhysicalProperties
+    # vars = fieldnames(T)
+    # types = fieldtypes(T)
+    # indexes_to_recurse = findall(types .<: PhysicalProperties)
+    # parameters = cat(((i in indexes_to_recurse) ? add_units(getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
+
+    parameters = Dict(
+        var => getproperty(pp, var) * unit_dict[var]
+        for var in variables(T)
+    )
+
+    T(parameters)
 end
 
 Base.propertynames(::T) where T <: PhysicalProperties = variables(T)
