@@ -5,13 +5,17 @@ abstract type PhysicalProperties end
 
 #make T -> var dict for convinience
 #make into Dict and PhysicalProperties constructors
-function phys_prop_from_kwargs(T::Type{<:PhysicalProperties};kwargs...)
+function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
     vars = fieldnames(T)
     types = fieldtypes(T)
 
     indexes_to_recurse = findall(types .<: PhysicalProperties)
 
-    parameters = cat(((i in indexes_to_recurse) ? phys_prop_from_kwargs(types[i];kwargs...) : kwargs[var] for (i, var) in enumerate(vars))..., dims=1)
+    parameters = [
+        (i in indexes_to_recurse) ? types[i](data_dict) : data_dict[var] 
+        for (i, var) in enumerate(vars)
+    ]
+
     T(parameters...)
 end
 
@@ -66,7 +70,7 @@ end
 
 function participation_vector(T::Type{<:PhysicalProperties})
     sym_var_dict = generate_sym_var_dict(T)
-    part_vector_symbolic = Symbolics.get_variables.(residues(phys_prop_from_kwargs(T; sym_var_dict...)))
+    part_vector_symbolic = Symbolics.get_variables.(residues(T(sym_var_dict)))
     
     rev_svd = Dict(values(sym_var_dict) .=> keys(sym_var_dict))
 

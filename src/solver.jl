@@ -11,21 +11,19 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_gues
     ]
 
     prob = NonlinearProblem(
-        (values, p) -> residues(phys_prop_from_kwargs(T;
-            Dict(
+        (values, p) -> residues(T(Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
-            )...)), 
+            ))), 
         initial_guesses_vec, p=()
     )
 
     sol = solve(prob, NewtonRaphson())
 
-    phys_prop_from_kwargs(T;
-        Dict(
+    T(Dict(
             Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
             Dict(k => Float64(v) for (k, v) in input_data)...
-        )...)
+    ))
 end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_guesses::Dict)

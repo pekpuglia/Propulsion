@@ -246,22 +246,22 @@ function Base.getindex(nfp::NozzleFlowProperties, i)
     (i == 1) ? nfp.sec1 : nfp.sec2
 end
 
-function select_and_remove_kwarg_suffix(suff::String, kwargs)
+function select_and_remove_dict_key_suffix(suff::String, dict)
     Dict(
         Symbol(string(pair.first)[1:(end-2)]) => pair.second
-        for pair in filter(x -> endswith(string(x.first), suff), kwargs)
+        for pair in filter(x -> endswith(string(x.first), suff), dict)
     )
 end
 
-function phys_prop_from_kwargs(T::Type{NozzleFlowProperties}; kwargs...)
+function NozzleFlowProperties(data_dict::Dict)
     
-    kw1 = select_and_remove_kwarg_suffix("_1", kwargs)
-    kw2 = select_and_remove_kwarg_suffix("_2", kwargs)
+    dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
+    dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
 
     NozzleFlowProperties(
-        phys_prop_from_kwargs(Quasi1dimflowProperties; kw1...),
-        phys_prop_from_kwargs(Quasi1dimflowProperties; kw2...),
-        kwargs[:F]
+        Quasi1dimflowProperties(dict1),
+        Quasi1dimflowProperties(dict2),
+        data_dict[:F]
     )
 end
 
@@ -270,11 +270,9 @@ default_initial_guesses(::Type{NozzleFlowProperties}) = Dict(
 )
 
 function add_units(nfp::NozzleFlowProperties, unit_dict)
-    # parameters = cat(((i in indexes_to_recurse) ? add_units(getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
-
     NozzleFlowProperties(
-        add_units(nfp.sec1, select_and_remove_kwarg_suffix("_1", unit_dict)),
-        add_units(nfp.sec2, select_and_remove_kwarg_suffix("_2", unit_dict)),
+        add_units(nfp.sec1, select_and_remove_dict_key_suffix("_1", unit_dict)),
+        add_units(nfp.sec2, select_and_remove_dict_key_suffix("_2", unit_dict)),
         nfp.F * unit_dict[:F]
     )
 end
