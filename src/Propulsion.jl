@@ -1,13 +1,14 @@
 module Propulsion
 #todo
 #pipe flow
+#prioritize using intensive properties?
 #sub/supersonic choice - initial guesses depend on the variables
 #more tests
 #normal shocks?
 #actually use this - do As/Ac x Pt/Ps plot
 #discober when initial guess for M is required
 #wrap and use supersonic::Bool?
-#test nozzle flow, add de Laval Nozzle
+#add de Laval Nozzle - multiple sections
 # q1dparams = Quasi1dimflowProperties(P=1e5, T=10.0, rho = 2.0, gamma = 1.4, Astar = 0.85, A = 1.0, initial_M=5)
 # q1dparams.M
 # res = Quasi1dimflowProperties(P = 1, T = 300, R = 287, gamma = 1.4, M=1.5, mdot=1)
