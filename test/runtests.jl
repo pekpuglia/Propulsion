@@ -187,5 +187,47 @@ function test_example_10_1()
         P0 = 5u"atm",
         T0 = 600u"Ra",
         gamma = 1.4,
-        R = 287u"J/kg/K")
+        R = 287u"J/kg/K",
+        initial_M = 5
+    )
+    isapprox(sol.M, 3.95, atol=0.01) &&
+    isapprox(sol.P, 0.035u"atm", atol=1e-3u"atm") &&
+    isapprox(sol.T, 145.6u"Ra", atol=0.1u"Ra")
 end
+
+@test test_example_10_1()
+
+#NozzleFlowProperties test
+function test_example_10_2()
+    nfp_supersonic = NozzleFlowProperties(
+        P0_1 = 1u"atm",
+        T0_1 = 288u"K",
+        M_1 = 1,
+        gamma_1 = 1.4,
+        R_1 = 287u"J/kg/K",
+        Astar_1 = 1u"m^2",
+        A_2 = 2u"m^2", 
+        initial_M_2 = 5)
+
+    nfp_subsonic = NozzleFlowProperties(
+        P0_1 = 1u"atm",
+        T0_1 = 288u"K",
+        M_1 = 1,
+        gamma_1 = 1.4,
+        R_1 = 287u"J/kg/K",
+        Astar_1 = 1u"m^2",
+        A_2 = 2u"m^2", 
+        initial_M_2 = 0.1)
+        
+    isapprox(nfp_supersonic[1].P, 0.528u"atm", atol=1e-3u"atm") &&
+    isapprox(nfp_supersonic[1].T, 240u"K", atol=1u"K") &&
+    isapprox(nfp_supersonic[2].M, 2.2, atol=0.1) &&
+    #small numerical difference
+    isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm") &&
+    isapprox(nfp_supersonic[2].T, 146u"K", atol=1u"K") &&
+    isapprox(nfp_subsonic[2].M, 0.3, atol=0.1) &&
+    isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm") &&
+    isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
+end
+
+@test test_example_10_2()
