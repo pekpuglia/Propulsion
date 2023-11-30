@@ -53,6 +53,7 @@ end
 @test test_dof_variable_count(FlowProperties)
 @test test_dof_variable_count(Quasi1dimflowProperties)
 @test test_dof_variable_count(NozzleFlowProperties)
+@test test_dof_variable_count(NormalShockProperties)
 
 
 function test_internal_solver()

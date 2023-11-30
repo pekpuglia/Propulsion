@@ -147,6 +147,51 @@ function residues(fp::FlowProperties)
     ]
 end
 ##
+export NormalShockProperties
+struct NormalShockProperties <: PhysicalProperties
+    fp1::FlowProperties
+    fp2::FlowProperties
+end
+
+function variables(::Type{NormalShockProperties})
+    [
+        variables(FlowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
+        variables(FlowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
+    ]
+end
+
+dof(::Type{NormalShockProperties}) = dof(FlowProperties)
+
+units(T::Type{NormalShockProperties}) = Dict(
+    Symbol(string(v)*suff) => u for (v, u) in units(FlowProperties) for suff in ["_1", "_2"]
+)
+
+function residues(nsp::NormalShockProperties)
+    [
+        residues(nsp.fp1)
+        residues(nsp.fp2)
+        nsp.fp1.gamma - nsp.fp2.gamma
+        nsp.fp1.R - nsp.fp2.R
+        (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1) / 2) * (nsp.fp2.gamma * nsp.fp2.M^2 - (nsp.fp2.gamma - 1) / 2) - ((nsp.fp1.gamma + 1)/2)^2
+        nsp.fp1.T0 - nsp.fp2.T0
+        nsp.fp2.P - nsp.fp1.P * (1 + 2nsp.fp1.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.gamma + 1))
+    ]
+end
+
+function NormalShockProperties(data_dict::Dict)
+    
+    dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
+    dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
+
+    NormalShockProperties(
+        FlowProperties(dict1),
+        FlowProperties(dict2),
+    )
+end
+
+Base.getproperty(nsp::NormalShockProperties, s::Symbol) = getfield(nsp, s)
+
+##
 export Quasi1dimflowProperties
 struct Quasi1dimflowProperties <: PhysicalProperties
     fp::FlowProperties
@@ -183,7 +228,11 @@ function residues(qp::Quasi1dimflowProperties)
             )) ^ ((qp.fp.cal_prop.gamma + 1) / 2(qp.fp.cal_prop.gamma - 1))
     ]
 end
+default_initial_guesses(::Type{NormalShockProperties}) = Dict(
+    :gamma_2 => 1.4
+)
 
+##
 #expand for N sections
 #refactor
 #test solver !!!!! analyze coherence of input, residues, etc
