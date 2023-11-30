@@ -19,8 +19,8 @@ function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
     T(parameters...)
 end
 
-function Base.Dict(pp::PhysicalProperties)
-    Dict(var => getproperty(pp, var) for var in variables(pp))
+function Base.Dict(pp::T) where T <: PhysicalProperties
+    Dict(var => getproperty(pp, var) for var in variables(T))
 end
 
 export dof
