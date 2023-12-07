@@ -42,9 +42,16 @@ export overconstraint_validation
 function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
     pv = participation_vector(T)
     allvars = variables(T)
+    sym_residues = residues(T(generate_sym_var_dict(T)))
     missingvars = setdiff(allvars, given_vars)
 
     remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+    if any(isempty.(remaining_variables_per_equation))
+        over_constrained_index = isempty.(remaining_variables_per_equation)
+        over_constrained_equation_variables = participation_vector(T)[over_constrained_index][1]
+        error("Over-constrained equation: $(sym_residues[over_constrained_index]). Must not specify $over_constrained_equation_variables all at once")
+    end
+
 
     max_clique_order = length(missingvars)
     for clique_order = 1:max_clique_order
@@ -60,9 +67,9 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
             #check if variable is overconstrained
             var_particip_indices = findall(==(newly_found_vars_vec), remaining_variables_per_equation)
             if length(var_particip_indices) > clique_order
-                overconstrained_equations = residues(T(generate_sym_var_dict(T)))[var_particip_indices]
+                overconstrained_equations = sym_residues[var_particip_indices]
                 overconstraint_order = length(var_particip_indices) - clique_order
-                return "variables $newly_found_vars_vec are overconstrained, with $overconstraint_order extra variable supplied. Equations: $overconstrained_equations"
+                error("variables $newly_found_vars_vec are overconstrained, \nwith $overconstraint_order extra variable supplied. Equations: $overconstrained_equations")
             end
     
             filter!(∉(newly_found_vars_vec), missingvars)
@@ -71,7 +78,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         end
     end
 
-    remaining_variables_per_equation
+    true
 end
 
 ##
@@ -97,11 +104,7 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
         error("$(dof(T)) thermodynamic properties needed, $(length(data_kwargs)) given: $(keys(data_kwargs))")
     end
     
-    remaining_vars = map(v -> v[v .∉ [keys(data_kwargs)]], participation_vector(T))
-    if any(isempty.(remaining_vars))
-        over_constrained_equation_variables = participation_vector(T)[isempty.(remaining_vars)][1]
-        error("Over-constrained equation. Must not specify $over_constrained_equation_variables all at once")
-    end
+    overconstraint_validation(T, keys(kwargs) |> collect)
 
 
     internal_solver(T, data_kwargs, initial_kwargs)
