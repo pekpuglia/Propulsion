@@ -19,7 +19,14 @@ module Propulsion
 
 #add de Laval Nozzle - multiple sections
 
-#FlowProperties(P=1u"atm", MM=29u"g/mol", rho=1.225u"kg/m^3", M = 1.8, T=300u"K", initial_gamma = 1.4) - singular exception
+#nsp = NormalShockProperties(
+#     v_1 = 680u"m/s",
+#     T_1 = 288u"K",
+#     P_1 = 1u"atm",
+#     gamma_1 = 1.4,
+#     a_2 = 441.79u"m/s"
+# ) - matrix contains Infs or NaNs
+
 include("physical_properties_base.jl")
 include("physical_properties.jl")
 include("solver.jl")
