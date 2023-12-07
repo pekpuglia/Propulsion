@@ -38,6 +38,43 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_gu
     add_units(unitless_solution, internal_units)
 end
 ##
+export overconstraint_validation
+function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
+    pv = participation_vector(T)
+    allvars = variables(T)
+    missingvars = setdiff(allvars, given_vars)
+
+    remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+
+    max_clique_order = length(missingvars)
+    for clique_order = 1:max_clique_order
+        for nth_order_clique_attempts = 1:length(missingvars)
+            #index of equations with clique_order remaining vars
+            n_remaining_var_eq_index = findfirst(==(clique_order), length.(remaining_variables_per_equation))
+            if n_remaining_var_eq_index |> isnothing
+                continue
+            end
+    
+            newly_found_vars_vec = remaining_variables_per_equation[n_remaining_var_eq_index]
+    
+            #check if variable is overconstrained
+            var_particip_indices = findall(==(newly_found_vars_vec), remaining_variables_per_equation)
+            if length(var_particip_indices) > clique_order
+                overconstrained_equations = residues(T(generate_sym_var_dict(T)))[var_particip_indices]
+                overconstraint_order = length(var_particip_indices) - clique_order
+                return "variables $newly_found_vars_vec are overconstrained, with $overconstraint_order extra variable supplied. Equations: $overconstrained_equations"
+            end
+    
+            filter!(∉(newly_found_vars_vec), missingvars)
+
+            remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+        end
+    end
+
+    remaining_variables_per_equation
+end
+
+##
 function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
 
