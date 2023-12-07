@@ -147,6 +147,7 @@ function residues(fp::FlowProperties)
     ]
 end
 ##
+#gives negative answers sometimes
 export NormalShockProperties
 struct NormalShockProperties <: PhysicalProperties
     fp1::FlowProperties
