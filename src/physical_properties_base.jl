@@ -24,7 +24,9 @@ function Base.Dict(pp::T) where T <: PhysicalProperties
 end
 
 export dof
-dof(::Type{<:PhysicalProperties}) = error("PhysicalProperties types must implement dof")
+function dof(T::Type{<:PhysicalProperties})
+    (T |> variables |> length)- (T |> generate_sym_var_dict |> T |> residues |> length)
+end
 
 export variables
 function variables(T::Type{<:PhysicalProperties})

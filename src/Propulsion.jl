@@ -6,6 +6,8 @@ module Propulsion
 #sub/supersonic choice - initial guesses depend on the variables
 #discober when initial guess for M is required
 #wrap and use supersonic::Bool?
+#add de Laval Nozzle - multiple sections
+#make "default values" for initial_guesses
 
 #more tests
 

@@ -37,24 +37,37 @@ function test_use_initial_value()
 end
 
 @test test_use_initial_value().M > 1
-############################################################################
-#internal coherence tests/unit tests
-function test_dof_variable_count(type::Type)
-    vars = variables(type)
-    dummy_values = ones(size(vars))
-    dummy_instance = type(Dict(var => dummy_val for (var, dummy_val) in zip(vars, dummy_values)))
-    res = residues(dummy_instance)
-    length(res) + dof(type) == length(vars)
+
+#constraint tests
+function test_mp_correct_input()
+    right_given_vars_mp = [:P, :MM, :T]
+    overconstraint_validation(MassProperties, right_given_vars_mp)
 end
 
-@test test_dof_variable_count(ThermodynamicProperties)
-@test test_dof_variable_count(MassProperties)
-@test test_dof_variable_count(CalorificProperties)
-@test test_dof_variable_count(FlowProperties)
-@test test_dof_variable_count(Quasi1dimflowProperties)
-@test test_dof_variable_count(NozzleFlowProperties)
-@test test_dof_variable_count(NormalShockProperties)
+@test test_mp_correct_input()
 
+function test_mp_wrong_input()
+    wrong_given_vars_mp = [:P, :MM, :T, :rho]
+    overconstraint_validation(MassProperties, wrong_given_vars_mp)
+end
+
+@test_throws ErrorException test_mp_wrong_input()
+
+function test_fp_right_input()
+    right_given_vars_fp = [:P, :MM, :rho, :M, :gamma]
+    overconstraint_validation(FlowProperties, right_given_vars_fp)
+end
+
+@test test_fp_right_input()
+
+function test_fp_wrong_input()
+    wrong_given_vars_fp = [:P, :MM, :rho, :M, :T]
+    overconstraint_validation(FlowProperties, wrong_given_vars_fp)
+end
+
+@test_throws ErrorException test_fp_wrong_input()
+############################################################################
+#internal coherence tests/unit tests
 
 function test_internal_solver()
     Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
