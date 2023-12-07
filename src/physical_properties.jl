@@ -11,8 +11,6 @@ struct ThermodynamicProperties <: PhysicalProperties
     end
 end
 
-dof(::Type{<:ThermodynamicProperties}) = 2
-
 units(::Type{ThermodynamicProperties}) = Dict(
     :P => u"Pa",
     :z => u"mol/m^3",
@@ -45,8 +43,6 @@ struct MassProperties <: PhysicalProperties
     end
 end
 
-dof(::Type{MassProperties}) = dof(ThermodynamicProperties) + 1
-
 units(::Type{MassProperties}) = Dict(
     :MM => u"kg/mol",
     :rho => u"kg/m^3",
@@ -76,8 +72,6 @@ struct CalorificProperties <: PhysicalProperties
         new(mp, cv, cp, gamma, a)
     end
 end
-
-dof(::Type{CalorificProperties}) = dof(MassProperties) + 1
 
 units(::Type{CalorificProperties}) = Dict(
     :cv => u"J/kg/K",
@@ -118,8 +112,6 @@ struct FlowProperties <: PhysicalProperties
         new(cp, M, v, T0, rho0, P0, a0)
     end
 end
-
-dof(::Type{FlowProperties}) = dof(CalorificProperties) + 1
 
 units(::Type{FlowProperties}) = Dict(
     :M => NoUnits,
@@ -162,8 +154,6 @@ struct Quasi1dimflowProperties <: PhysicalProperties
     end
 end
 
-dof(::Type{Quasi1dimflowProperties}) = dof(FlowProperties) + 1
-
 units(::Type{Quasi1dimflowProperties}) = Dict(
     :mdot => u"kg/s",
     :A => u"m^2",
@@ -199,8 +189,6 @@ struct NozzleFlowProperties <: PhysicalProperties
         new(sec1, sec2, F)
     end
 end
-
-dof(::Type{NozzleFlowProperties}) = dof(Quasi1dimflowProperties) + 1
 
 function variables(T::Type{NozzleFlowProperties})
     [
