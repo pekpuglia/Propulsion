@@ -153,8 +153,6 @@ function variables(::Type{NormalShockProperties})
     ]
 end
 
-dof(::Type{NormalShockProperties}) = dof(FlowProperties)
-
 units(T::Type{NormalShockProperties}) = Dict(
     Symbol(string(v)*suff) => u for (v, u) in units(FlowProperties) for suff in ["_1", "_2"]
 )
