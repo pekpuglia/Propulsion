@@ -89,3 +89,7 @@ function participation_vector(T::Type{<:PhysicalProperties})
     map(v -> getindex.([rev_svd], v), part_vector_symbolic)
 end
 
+function sym_jacobian(T::Type{<:PhysicalProperties})
+    sym_var_dict = generate_sym_var_dict(T)
+    Symbolics.jacobian(residues(T(sym_var_dict)), values(sym_var_dict) |> collect)
+end
