@@ -66,6 +66,20 @@ function test_fp_wrong_input()
 end
 
 @test_throws ErrorException test_fp_wrong_input()
+
+############################################################################
+#numerical tests found through bugs
+function test_normal_shock_inf_or_nan()
+    nsp = NormalShockProperties(
+           v_1 = 680u"m/s",
+           T_1 = 288u"K",
+           P_1 = 1u"atm",
+           gamma_1 = 1.4,
+           a_2 = 441.79u"m/s"
+       )
+end
+
+@test_throws ArgumentError test_normal_shock_inf_or_nan()
 ############################################################################
 #internal coherence tests/unit tests
 
