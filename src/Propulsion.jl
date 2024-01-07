@@ -11,8 +11,6 @@ module Propulsion
 
 #more tests
 
-#normal shocks?
-
 #make "default values" for initial_guesses
 
 #actually use this - do As/Ac x Pt/Ps plot
