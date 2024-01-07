@@ -89,7 +89,7 @@ function residues(cp::CalorificProperties)
         #gamma = cp/cv
         cp.gamma * cp.cv - cp.cp
         #a = sqrt(gamma R T)
-        cp.a - √(cp.gamma * cp.mp.R * cp.mp.tp.T)
+        cp.a^2 - (cp.gamma * cp.mp.R * cp.mp.tp.T)
     ]
 end
 ##
@@ -139,6 +139,68 @@ function residues(fp::FlowProperties)
     ]
 end
 ##
+#gives negative answers sometimes
+export NormalShockProperties
+struct NormalShockProperties <: PhysicalProperties
+    fp1::FlowProperties
+    fp2::FlowProperties
+end
+
+function variables(::Type{NormalShockProperties})
+    [
+        variables(FlowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
+        variables(FlowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
+    ]
+end
+
+units(T::Type{NormalShockProperties}) = Dict(
+    Symbol(string(v)*suff) => u for (v, u) in units(FlowProperties) for suff in ["_1", "_2"]
+)
+
+function residues(nsp::NormalShockProperties)
+    [
+        residues(nsp.fp1)
+        residues(nsp.fp2)
+        nsp.fp1.gamma - nsp.fp2.gamma
+        nsp.fp1.R - nsp.fp2.R
+        (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1) / 2) * (nsp.fp2.gamma * nsp.fp2.M^2 - (nsp.fp2.gamma - 1) / 2) - ((nsp.fp1.gamma + 1)/2)^2
+        # nsp.fp2.M - sqrt((1 + (nsp.fp1.gamma - 1)/2 * nsp.fp1.M^2) / (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1)/2))
+        nsp.fp1.T0 - nsp.fp2.T0
+        nsp.fp2.P - nsp.fp1.P * (1 + 2nsp.fp1.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.gamma + 1))
+        # nsp.fp1.M - sqrt((nsp.fp2.P / nsp.fp1.P - 1) * (nsp.fp1.gamma + 1) / (2*nsp.fp1.gamma) + 1)
+    ]
+end
+
+function NormalShockProperties(data_dict::Dict)
+    
+    dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
+    dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
+
+    NormalShockProperties(
+        FlowProperties(dict1),
+        FlowProperties(dict2),
+    )
+end
+
+function Base.getproperty(nsp::NormalShockProperties, s::Symbol)
+    if s in fieldnames(NormalShockProperties)
+        getfield(nsp, s)
+    else
+        if string(s)[(end-1):end] == "_1"
+            getproperty(nsp.fp1, Symbol(string(s)[1:(end-2)]))
+        elseif string(s)[(end-1):end] == "_2"
+            getproperty(nsp.fp2, Symbol(string(s)[1:(end-2)]))
+        else
+            error("property $s cannot be found among fields or variables")
+        end
+    end
+end
+
+default_initial_guesses(::Type{NormalShockProperties}) = Dict(
+    :gamma_2 => 1.4,
+    :a_2 => 100000u"m/s"
+)
+##
 export Quasi1dimflowProperties
 struct Quasi1dimflowProperties <: PhysicalProperties
     fp::FlowProperties
@@ -174,6 +236,7 @@ function residues(qp::Quasi1dimflowProperties)
     ]
 end
 
+##
 #expand for N sections
 #refactor
 #test solver !!!!! analyze coherence of input, residues, etc

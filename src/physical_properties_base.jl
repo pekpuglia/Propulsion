@@ -19,8 +19,8 @@ function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
     T(parameters...)
 end
 
-function Base.Dict(pp::PhysicalProperties)
-    Dict(var => getproperty(pp, var) for var in variables(pp))
+function Base.Dict(pp::T) where T <: PhysicalProperties
+    Dict(var => getproperty(pp, var) for var in variables(T))
 end
 
 export dof
@@ -55,6 +55,7 @@ end
 Base.propertynames(::T) where T <: PhysicalProperties = variables(T)
 
 ##ONLY WORKS FOR SINGLE RECURSION CASE
+#does not allow for accessing inner PhysicalProperties!!!
 function Base.getproperty(pp::T, s::Symbol) where T <: PhysicalProperties
     vars = fieldnames(T)
     types = fieldtypes(T)

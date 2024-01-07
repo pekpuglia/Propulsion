@@ -247,3 +247,23 @@ let
     @test isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm")
     @test isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
 end
+
+function test_example_8_11()
+    nsp = NormalShockProperties(
+        v_1 = 680u"m/s",
+        T_1 = 288u"K",
+        P_1 = 1u"atm",
+        gamma_1 = 1.4,
+        R_1 = 287u"J/kg/K"
+    )
+end
+
+let 
+    nsp = test_example_8_11()
+
+    @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
+    @test isapprox(nsp.T_2, 486u"K", atol=1u"K")
+    @test isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
+    @test ustrip(nsp.a_2 ) > 0
+    @test isapprox(nsp.M_2, 0.577, atol = 1e-3)
+end
