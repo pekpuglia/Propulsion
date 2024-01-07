@@ -1,3 +1,8 @@
+#debug help
+export sym_substitution_dict
+function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_data::Dict{Symbol, <:Real}, default_value=1.0)
+    Dict(sym_vars(T)[var] => (var in keys(input_data)) ? input_data[var] : default_value for var in variables(T))
+end
 
 #initial_guesses must be missingvars
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict)
