@@ -25,7 +25,7 @@ end
 
 export dof
 function dof(T::Type{<:PhysicalProperties})
-    (T |> variables |> length)- (T |> generate_sym_var_dict |> T |> residues |> length)
+    (T |> variables |> length)- (T |> sym_vars |> T |> residues |> length)
 end
 
 export variables
@@ -76,12 +76,13 @@ residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types mu
 default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
 
 ## symbolic analysis tools
-function generate_sym_var_dict(T::Type{<:PhysicalProperties})
+#change to shorter and better name + symbolic constructor
+function sym_vars(T::Type{<:PhysicalProperties})
     Dict(var => (@variables $var)[1] for var in variables(T))
 end
 
 function participation_vector(T::Type{<:PhysicalProperties})
-    sym_var_dict = generate_sym_var_dict(T)
+    sym_var_dict = sym_vars(T)
     part_vector_symbolic = Symbolics.get_variables.(residues(T(sym_var_dict)))
     
     rev_svd = Dict(values(sym_var_dict) .=> keys(sym_var_dict))
@@ -90,6 +91,6 @@ function participation_vector(T::Type{<:PhysicalProperties})
 end
 
 function sym_jacobian(T::Type{<:PhysicalProperties})
-    sym_var_dict = generate_sym_var_dict(T)
+    sym_var_dict = sym_vars(T)
     Symbolics.jacobian(residues(T(sym_var_dict)), values(sym_var_dict) |> collect)
 end
