@@ -1,10 +1,9 @@
 module Propulsion
 #todo
-#pipe flow
 #prioritize using intensive properties?
 
 #sub/supersonic choice - initial guesses depend on the variables
-#discober when initial guess for M is required
+#discover when initial guess for M is required
 #wrap and use supersonic::Bool?
 #add de Laval Nozzle - multiple sections
 #make "default values" for initial_guesses
@@ -15,6 +14,7 @@ module Propulsion
 
 #actually use this - do As/Ac x Pt/Ps plot
 
+#pipe flow
 #add de Laval Nozzle - multiple sections
 
 include("physical_properties_base.jl")

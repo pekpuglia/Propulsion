@@ -239,7 +239,6 @@ end
 ##
 #expand for N sections
 #refactor
-#test solver !!!!! analyze coherence of input, residues, etc
 export NozzleFlowProperties
 struct NozzleFlowProperties <: PhysicalProperties
     sec1::Quasi1dimflowProperties

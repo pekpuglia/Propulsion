@@ -3,8 +3,6 @@ using Unitful, NonlinearSolve, Symbolics
 
 abstract type PhysicalProperties end
 
-#make T -> var dict for convinience
-#make into Dict and PhysicalProperties constructors
 function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
     vars = fieldnames(T)
     types = fieldtypes(T)
@@ -67,7 +65,6 @@ function Base.getproperty(pp::T, s::Symbol) where T <: PhysicalProperties
     (s in vars) ? getfield(pp, s) : getproperty(getfield(pp, vars[index_to_recurse[1]]), s)
 end
 
-#melhorar
 units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(T))
 
 export residues
@@ -76,7 +73,6 @@ residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types mu
 default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
 
 ## symbolic analysis tools
-#change to shorter and better name + symbolic constructor
 function sym_vars(T::Type{<:PhysicalProperties})
     Dict(var => (@variables $var)[1] for var in variables(T))
 end
