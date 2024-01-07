@@ -106,7 +106,7 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
         error("expected keys from $allvars, got: $(keys(data_kwargs)) ")
     end
 
-    #dof validation - review dof calculation?
+    #dof validation
     if length(data_kwargs) != dof(T)
         error("$(dof(T)) thermodynamic properties needed, $(length(data_kwargs)) given: $(keys(data_kwargs))")
     end
