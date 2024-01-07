@@ -1,12 +1,12 @@
 
 #initial_guesses must be missingvars
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_guesses::Dict)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict)
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
     
     initial_guesses_vec = [
-        (mv ∈ keys(initial_guesses)) ? initial_guesses[mv] : 1.0
+        (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.1
         for mv in missingvars
     ]
 
@@ -26,12 +26,12 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, initial_gues
     ))
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, initial_guesses::Dict)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict)
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
 
-    unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in initial_guesses)
+    unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_initial_guesses)
 
     unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses)
 
