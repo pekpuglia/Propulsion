@@ -13,16 +13,17 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
     
     initial_guesses_vec = [
-        (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.1
+        (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0
         for mv in missingvars
-    ]
-
+    ] .|> Float64
+    
+    #test steadystate problem
     prob = NonlinearProblem(
         (values, p) -> residues(T(Dict(
                 Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
                 input_data...
             ))), 
-        initial_guesses_vec, p=()
+        initial_guesses_vec
     )
 
     sol = solve(prob, NewtonRaphson())
