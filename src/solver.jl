@@ -42,7 +42,7 @@ export overconstraint_validation
 function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
     pv = participation_vector(T)
     allvars = variables(T)
-    sym_residues = residues(T(generate_sym_var_dict(T)))
+    sym_residues = residues(T(sym_vars(T)))
     missingvars = setdiff(allvars, given_vars)
 
     remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
