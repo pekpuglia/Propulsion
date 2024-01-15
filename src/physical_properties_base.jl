@@ -1,4 +1,4 @@
-using Unitful, NonlinearSolve, Symbolics
+using Unitful, Symbolics
 
 
 abstract type PhysicalProperties end

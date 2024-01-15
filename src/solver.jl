@@ -6,6 +6,7 @@ function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_data::Dict{S
     ) for var in variables(T))
 end
 
+using Optimization, OptimizationOptimJL, NonlinearSolve
 #initial_guesses must be missingvars
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict)
     allvars = variables(T)
@@ -18,19 +19,41 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     ] .|> Float64
     
     #test steadystate problem
-    prob = NonlinearProblem(
+    # prob = NonlinearProblem(
+    #     (values, p) -> residues(T(Dict(
+    #             Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
+    #             input_data...
+    #         ))), 
+    #     initial_guesses_vec
+    # )
+
+    # sol = solve(prob, NewtonRaphson())
+
+    # T(Dict(
+    #         Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+    #         Dict(k => Float64(v) for (k, v) in input_data)...
+    # ))
+
+
+    opt_func = OptimizationFunction(
         (values, p) -> residues(T(Dict(
-                Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-                input_data...
-            ))), 
-        initial_guesses_vec
+            Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
+            input_data...
+        ))) .^2 |> sum,
+        AutoForwardDiff()
     )
 
-    sol = solve(prob, NewtonRaphson())
+    prob = OptimizationProblem(opt_func, initial_guesses_vec,
+        # lb = zeros(size(initial_guesses_vec)),
+        # ub = fill(Inf, size(initial_guesses_vec))
+    )
+
+    #sol.original.minimum
+    sol = solve(prob, Optim.Newton())
 
     T(Dict(
-            Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-            Dict(k => Float64(v) for (k, v) in input_data)...
+        Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+        Dict(k => Float64(v) for (k, v) in input_data)...
     ))
 end
 
