@@ -6,9 +6,32 @@ function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_data::Dict{S
     ) for var in variables(T))
 end
 
+export opt_func_residues
+function opt_func_residues(T, missingvars, input_data)
+    (values, p) -> residues(T(Dict(
+            Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
+            input_data...
+        )))
+end
+
 using Optimization, OptimizationOptimJL, NonlinearSolve
+
+export DEFAULT_OPT_PROB_GENERATOR
+const DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0) -> begin
+        opt_func = OptimizationFunction(
+        (values, p) -> f_value_p(values, p) .^2 |> sum,
+        AutoForwardDiff()
+    )
+
+    OptimizationProblem(opt_func, u0)
+end
+
+export internal_solver
 #initial_guesses must be missingvars
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict)
+"""
+opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
+"""
+function internal_solver(T::Type, input_data::Dict, input_initial_guesses::Dict, opt_prob_generator::Function, solver)
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
@@ -17,44 +40,14 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
         (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0
         for mv in missingvars
     ] .|> Float64
-    
-    #test steadystate problem
-    # prob = NonlinearProblem(
-    #     (values, p) -> residues(T(Dict(
-    #             Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-    #             input_data...
-    #         ))), 
-    #     initial_guesses_vec
-    # )
-
-    # sol = solve(prob, NewtonRaphson())
-
-    # T(Dict(
-    #         Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-    #         Dict(k => Float64(v) for (k, v) in input_data)...
-    # ))
-
-
-    opt_func = OptimizationFunction(
-        (values, p) -> residues(T(Dict(
-            Dict(missingvar => value for (missingvar, value) in zip(missingvars, values))..., 
-            input_data...
-        ))) .^2 |> sum,
-        AutoForwardDiff()
-    )
-
-    prob = OptimizationProblem(opt_func, initial_guesses_vec,
-        # lb = zeros(size(initial_guesses_vec)),
-        # ub = fill(Inf, size(initial_guesses_vec))
-    )
 
     #sol.original.minimum
-    sol = solve(prob, Optim.Newton())
+    sol = solve(opt_prob_generator(opt_func_residues(T, missingvars, input_data), initial_guesses_vec), solver)
 
-    T(Dict(
-        Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-        Dict(k => Float64(v) for (k, v) in input_data)...
-    ))
+    # T(Dict(
+    #     Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+    #     Dict(k => Float64(v) for (k, v) in input_data)...
+    # ))
 end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict)
@@ -115,6 +108,9 @@ end
 ##
 function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
+    kwargs = Dict(kwargs)
+    opt_prob_gen = pop!(kwargs, :opt_prob_gen)
+    solver = pop!(kwargs, :solver)
 
     initial_keys = filter(s -> startswith(string(s), "initial_"), keys(kwargs))
 
@@ -138,5 +134,5 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     overconstraint_validation(T, keys(kwargs) |> collect)
 
 
-    internal_solver(T, data_kwargs, initial_kwargs)
+    internal_solver(T, data_kwargs, initial_kwargs, opt_prob_gen, solver)
 end
