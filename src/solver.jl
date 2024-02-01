@@ -26,12 +26,15 @@ const DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0) -> begin
     OptimizationProblem(opt_func, u0)
 end
 
-export internal_solver
 #initial_guesses must be missingvars
 """
 opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
 """
-function internal_solver(T::Type, input_data::Dict, input_initial_guesses::Dict, opt_prob_generator::Function, solver)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict, 
+        opt_prob_generator::Union{Function, Nothing} = DEFAULT_OPT_PROB_GENERATOR, 
+        solver = Optim.NewtonTrustRegion(), 
+        return_sol=false
+    )
     allvars = variables(T)
 
     missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
@@ -42,22 +45,30 @@ function internal_solver(T::Type, input_data::Dict, input_initial_guesses::Dict,
     ] .|> Float64
 
     #sol.original.minimum
+    opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
+    solver = something(solver, Optim.NewtonTrustRegion())
     sol = solve(opt_prob_generator(opt_func_residues(T, missingvars, input_data), initial_guesses_vec), solver)
 
-    # T(Dict(
-    #     Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-    #     Dict(k => Float64(v) for (k, v) in input_data)...
-    # ))
+    ret = T(Dict(
+        Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+        Dict(k => Float64(v) for (k, v) in input_data)...
+    ))
+    return_sol = something(return_sol, false)
+    (return_sol) ? (ret, sol) : ret
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict)
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
+        opt_prob_generator = DEFAULT_OPT_PROB_GENERATOR, 
+        solver = Optim.NewtonTrustRegion(),
+        return_sol=false
+    )
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
 
     unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_initial_guesses)
 
-    unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses)
+    unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses, opt_prob_generator, solver, return_sol)
 
     add_units(unitless_solution, internal_units)
 end
@@ -109,12 +120,19 @@ end
 function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
     kwargs = Dict(kwargs)
-    opt_prob_gen = pop!(kwargs, :opt_prob_gen)
-    solver = pop!(kwargs, :solver)
+
+    opt_prob_gen = pop!(kwargs, :opt_prob_gen, nothing)
+    solver = pop!(kwargs, :solver, nothing)
+    return_sol = pop!(kwargs, :return_sol, nothing)
 
     initial_keys = filter(s -> startswith(string(s), "initial_"), keys(kwargs))
 
     data_kwargs = filter(p -> p.first ∉ initial_keys, kwargs)
+    if all(isa.(values(data_kwargs), Real))
+        data_kwargs = Dict{Symbol, Real}(data_kwargs)
+    else
+        data_kwargs = Dict{Symbol, Number}(data_kwargs)
+    end
     initial_kwargs = Dict(
         default_initial_guesses(T)...,
         Dict(Symbol(string(init_key)[9:end]) => kwargs[init_key]
@@ -134,5 +152,5 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     overconstraint_validation(T, keys(kwargs) |> collect)
 
 
-    internal_solver(T, data_kwargs, initial_kwargs, opt_prob_gen, solver)
+    internal_solver(T, data_kwargs, initial_kwargs, opt_prob_gen, solver, return_sol)
 end
