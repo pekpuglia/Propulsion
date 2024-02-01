@@ -197,8 +197,7 @@ function Base.getproperty(nsp::NormalShockProperties, s::Symbol)
 end
 
 default_initial_guesses(::Type{NormalShockProperties}) = Dict(
-    :gamma_2 => 1.4,
-    :a_2 => 100000u"m/s"
+    :gamma_2 => 1.4
 )
 ##
 export Quasi1dimflowProperties
