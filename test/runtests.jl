@@ -28,7 +28,7 @@ function test_use_initial_value()
     Quasi1dimflowProperties(
         P=1, 
         T=10.0, 
-        rho = 2.0, 
+        MM=29, 
         gamma = 1.4, 
         Astar = 0.85, 
         A = 1.0, 
