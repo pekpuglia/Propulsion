@@ -6,7 +6,7 @@ module Propulsion
 #discover when initial guess for M is required
 #wrap and use supersonic::Bool?
 #add de Laval Nozzle - multiple sections
-#make "default values" for initial_guesses
+#unit refactor!
 
 #more tests
 
