@@ -70,7 +70,11 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
 
     unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses, opt_prob_generator, solver, return_sol)
 
-    add_units(unitless_solution, internal_units)
+    if return_sol
+        add_units(unitless_solution[1], internal_units), unitless_solution[2]
+    else
+        add_units(unitless_solution, internal_units)
+    end
 end
 ##
 export overconstraint_validation
