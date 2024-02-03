@@ -26,7 +26,7 @@ end
 
 function test_use_initial_value()
     Quasi1dimflowProperties(
-        P=1e5, 
+        P=1, 
         T=10.0, 
         rho = 2.0, 
         gamma = 1.4, 
