@@ -1,14 +1,15 @@
 module Propulsion
 #todo
+
+#solve domain errors/add box constraints
+
 #prioritize using intensive properties?
 
 #sub/supersonic choice - initial guesses depend on the variables
 #discover when initial guess for M is required
 #wrap and use supersonic::Bool?
-#add de Laval Nozzle - multiple sections
-#unit refactor!
 
-#more tests
+#unit refactor!
 
 #make "default values" for initial_guesses
 
