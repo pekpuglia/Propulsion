@@ -12,15 +12,15 @@ struct ThermodynamicProperties <: PhysicalProperties
 end
 
 units(::Type{ThermodynamicProperties}) = Dict(
-    :P => u"Pa",
+    :P => u"atm",
     :z => u"mol/m^3",
     :T => u"K"
 )
 
-const Rmolar = 8.3144598u"J/mol/K"
+const Rmolar = 1u"R"
 
 r_molar(::Number) = Rmolar
-r_molar(::Real) = ustrip(u"J/mol/K", Rmolar)
+r_molar(::Real) = ustrip(u"atm*m^3/mol/K", Rmolar)
 
 function residues(tp::ThermodynamicProperties)
     [tp.P - tp.z*tp.T*r_molar(tp.P)]
