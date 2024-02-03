@@ -11,16 +11,21 @@ struct ThermodynamicProperties <: PhysicalProperties
     end
 end
 
+const DEF_PRESSURE_UNIT = u"atm"
+const DEF_MOLARCONC_UNIT = u"mol/m^3"
+const DEF_TEMPERATURE_UNIT = u"K"
+
 units(::Type{ThermodynamicProperties}) = Dict(
-    :P => u"Pa",
-    :z => u"mol/m^3",
-    :T => u"K"
+    :P => DEF_PRESSURE_UNIT,
+    :z => DEF_MOLARCONC_UNIT,
+    :T => DEF_TEMPERATURE_UNIT
 )
 
-const Rmolar = 8.3144598u"J/mol/K"
+const Rmolar = 1u"R"
+const DEF_MOLARCALORCAP_UNIT = DEF_PRESSURE_UNIT / (DEF_MOLARCONC_UNIT * DEF_TEMPERATURE_UNIT) 
 
 r_molar(::Number) = Rmolar
-r_molar(::Real) = ustrip(u"J/mol/K", Rmolar)
+r_molar(::Real) = ustrip(DEF_MOLARCALORCAP_UNIT, Rmolar)
 
 function residues(tp::ThermodynamicProperties)
     [tp.P - tp.z*tp.T*r_molar(tp.P)]
@@ -43,10 +48,14 @@ struct MassProperties <: PhysicalProperties
     end
 end
 
+const DEF_MOLARMASS_UNIT = u"g/mol"
+const DEF_DENSITY_UNIT = DEF_MOLARMASS_UNIT * DEF_MOLARCONC_UNIT
+const DEF_MASSCALORCAP_UNIT = DEF_MOLARCALORCAP_UNIT / DEF_MOLARMASS_UNIT
+
 units(::Type{MassProperties}) = Dict(
-    :MM => u"kg/mol",
-    :rho => u"kg/m^3",
-    :R => u"J/kg/K",
+    :MM => DEF_MOLARMASS_UNIT,
+    :rho => DEF_DENSITY_UNIT,
+    :R => DEF_MASSCALORCAP_UNIT,
     units(ThermodynamicProperties)...
 )
 
@@ -73,11 +82,13 @@ struct CalorificProperties <: PhysicalProperties
     end
 end
 
+const DEF_SPEED_UNIT = √(DEF_MASSCALORCAP_UNIT * DEF_TEMPERATURE_UNIT)
+
 units(::Type{CalorificProperties}) = Dict(
-    :cv => u"J/kg/K",
-    :cp => u"J/kg/K",
+    :cv => DEF_MASSCALORCAP_UNIT,
+    :cp => DEF_MASSCALORCAP_UNIT,
     :gamma => NoUnits,
-    :a => u"m/s",
+    :a => DEF_SPEED_UNIT,
     units(MassProperties)...
 )
 
@@ -115,11 +126,11 @@ end
 
 units(::Type{FlowProperties}) = Dict(
     :M => NoUnits,
-    :v => u"m/s",
-    :T0 => u"K",
-    :rho0 => u"kg/m^3",
-    :P0 => u"Pa",
-    :a0 => u"m/s",
+    :v => DEF_SPEED_UNIT,
+    :T0 => DEF_TEMPERATURE_UNIT,
+    :rho0 => DEF_DENSITY_UNIT,
+    :P0 => DEF_PRESSURE_UNIT,
+    :a0 => DEF_SPEED_UNIT,
     units(CalorificProperties)...
 )
 
@@ -197,8 +208,7 @@ function Base.getproperty(nsp::NormalShockProperties, s::Symbol)
 end
 
 default_initial_guesses(::Type{NormalShockProperties}) = Dict(
-    :gamma_2 => 1.4,
-    :a_2 => 100000u"m/s"
+    :gamma_2 => 1.4
 )
 ##
 export Quasi1dimflowProperties
