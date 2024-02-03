@@ -23,7 +23,7 @@ const DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0) -> begin
         AutoForwardDiff()
     )
 
-    OptimizationProblem(opt_func, u0)
+    OptimizationProblem(opt_func, u0, iterations = 10000)
 end
 
 #initial_guesses must be missingvars
@@ -46,7 +46,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
 
     #sol.original.minimum
     opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
-    solver = something(solver, Optim.NewtonTrustRegion())
+    solver = something(solver, Optim.BFGS())
     sol = solve(opt_prob_generator(opt_func_residues(T, missingvars, input_data), initial_guesses_vec), solver)
 
     ret = T(Dict(
@@ -69,7 +69,9 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
     unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_initial_guesses)
 
     unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses, opt_prob_generator, solver, return_sol)
-
+    
+    return_sol = something(return_sol, false)
+    
     if return_sol
         add_units(unitless_solution[1], internal_units), unitless_solution[2]
     else
