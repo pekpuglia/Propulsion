@@ -32,7 +32,7 @@ opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
 """
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict, 
         opt_prob_generator::Union{Function, Nothing} = DEFAULT_OPT_PROB_GENERATOR, 
-        solver = Optim.NewtonTrustRegion(), 
+        solver = Optim.BFGS(), 
         return_sol=false
     )
     allvars = variables(T)
@@ -59,7 +59,7 @@ end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
         opt_prob_generator = DEFAULT_OPT_PROB_GENERATOR, 
-        solver = Optim.NewtonTrustRegion(),
+        solver = Optim.BFGS(),
         return_sol=false
     )
     internal_units = units(T)
