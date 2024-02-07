@@ -13,6 +13,9 @@ using OptimizationOptimJL
 # ╔═╡ 48e0a2ed-dc24-4d2e-ad81-fd9ed5adf535
 using Propulsion
 
+# ╔═╡ 255bdf22-d657-418a-9632-75392e0a36f2
+using Unitful
+
 # ╔═╡ c304bbe9-06d2-4e5a-b0de-b0d51ae9c265
 md"""
 ### Nelder-Mead
@@ -43,6 +46,21 @@ md"""
 #### Searching for a solver/opt_prob which can solve FlowProperties
 """
 
+# ╔═╡ 42047ab3-aa2f-420a-a1c5-72f87d6b1130
+FlowProperties(P = 1, T=300, MM=29, gamma=1.4, M = 0.7,
+	opt_prob_gen=DEFAULT_OPT_PROB_GENERATOR,
+	solver = Optim.BFGS(), return_sol=true)[2].original
+
+# ╔═╡ 8092d2f4-b011-430b-a17e-d564eb3999e6
+md"""
+### Interior Point Newton
+"""
+
+# ╔═╡ fdfe9d23-6da7-48ad-b228-97de0f80ec6d
+md"""
+# Test cases
+"""
+
 # ╔═╡ 5155755c-fff1-4a7d-902b-140aeee1451b
 prob_gen = (f_value_p, u0) -> begin
         opt_func = OptimizationFunction(
@@ -50,42 +68,71 @@ prob_gen = (f_value_p, u0) -> begin
         AutoForwardDiff()
     )
 
-    OptimizationProblem(opt_func, u0, iterations=5000)
+    OptimizationProblem(opt_func, u0, 
+		iterations=10000,
+		lb = √eps() * ones(size(u0)),
+		ub = fill(Inf, size(u0)),
+		reltol=1e-10
+		)
 end
 
-# ╔═╡ 42047ab3-aa2f-420a-a1c5-72f87d6b1130
-FlowProperties(P = 1, T=300, MM=29, gamma=1.4, M = 0.7,
-	opt_prob_gen=prob_gen,
-	solver = Optim.BFGS(), return_sol=true)[2].original
-
-# ╔═╡ 8092d2f4-b011-430b-a17e-d564eb3999e6
-md"""
-### BFGS
-"""
-
 # ╔═╡ c4d84cba-4ebc-4b0b-a704-bdab3ea1ec0d
-tp_bfgs = ThermodynamicProperties(P= 1, T = 300, 
-	opt_prob_gen=DEFAULT_OPT_PROB_GENERATOR,
-	solver=Optim.BFGS(), return_sol=true)[2].original.minimum
+# ╠═╡ disabled = true
+#=╠═╡
+tp_ipnewton = ThermodynamicProperties(P= 1, T = 300, 
+	opt_prob_gen=prob_gen,
+	solver=Optim.IPNewton(), return_sol=true)
+  ╠═╡ =#
+
+# ╔═╡ c0323baa-a8bc-49d8-a8ba-613cbda3c6cf
+#=╠═╡
+residues(tp_ipnewton[1])
+  ╠═╡ =#
 
 # ╔═╡ 1ba9fcd1-12ee-4a0b-8a4c-f42a3c54c417
-mp_bfgs = MassProperties(P=1, T=300, MM=0.029,
-	opt_prob_gen=DEFAULT_OPT_PROB_GENERATOR,
-	solver = Optim.BFGS(), return_sol=true)[2].original.minimum
+# ╠═╡ disabled = true
+#=╠═╡
+mp_ipnewton = MassProperties(P=1, T=300, MM=0.029,
+	opt_prob_gen=prob_gen,
+	solver = Optim.IPNewton(), return_sol=true)
+  ╠═╡ =#
+
+# ╔═╡ 543c278e-eb49-461c-9daa-dea2670274ad
+#=╠═╡
+residues(mp_ipnewton[1])
+  ╠═╡ =#
 
 # ╔═╡ 25cff5ca-0254-4108-acb0-0d49d0874d5e
-calp_bfgs = CalorificProperties(P=1, T=300, MM=0.029, gamma=1.4,
-	opt_prob_gen=DEFAULT_OPT_PROB_GENERATOR,
-	solver = Optim.BFGS(), return_sol=true)[2].original.minimum
+# ╠═╡ disabled = true
+#=╠═╡
+calp_ipnewton = CalorificProperties(P=1.5, T=300, MM=0.029, gamma=1.4,
+	opt_prob_gen=prob_gen,
+	solver = Optim.IPNewton(), return_sol=true)
+  ╠═╡ =#
+
+# ╔═╡ bea85548-8fb7-4553-919d-4ab478f4851c
+#=╠═╡
+residues(calp_ipnewton[1])
+  ╠═╡ =#
 
 # ╔═╡ e67a58a0-0434-4a3c-b741-67eb337a6742
-fp_bfgs = FlowProperties(P = 1, T=300, MM=0.029, gamma=1.4, M = 0.7,
+# ╠═╡ disabled = true
+#=╠═╡
+fp_ipnewton = FlowProperties(P = 1, T=300, MM=0.029, gamma=1.4, M = 0.7,
 	opt_prob_gen=prob_gen,
-	solver = Optim.BFGS(), return_sol=true)[2].original
+	solver = Optim.IPNewton(), return_sol=true)
+  ╠═╡ =#
+
+# ╔═╡ e0d6aa82-6514-4c1e-af19-84c4ce3d4bdf
+#=╠═╡
+residues(fp_ipnewton[1])
+  ╠═╡ =#
 
 # ╔═╡ 07552200-dbb3-4525-922c-e7b1154bd28d
-Quasi1dimflowProperties(
-	P=1,
+# ╠═╡ disabled = true
+#=╠═╡
+q1fp_ipnewton = Quasi1dimflowProperties(
+	P=1.5,
 	T=300.0, 
 	rho = 2.0, 
 	gamma = 1.4, 
@@ -93,20 +140,169 @@ Quasi1dimflowProperties(
 	A = 1.0,
 	initial_M = 0.5,
 	opt_prob_gen=prob_gen,
-	solver = Optim.BFGS(),
+	solver = Optim.IPNewton(),
 	return_sol=true
-)[2].original
+)
+  ╠═╡ =#
+
+# ╔═╡ ead24abb-ef0c-4a7a-8f63-bebccd00f0c9
+#=╠═╡
+residues(q1fp_ipnewton[1])
+  ╠═╡ =#
 
 # ╔═╡ 6d06c86b-456b-4c93-96e6-75501b57042e
-nfp_bfgs = NozzleFlowProperties(
-	P_1 = 1, T_1=300, MM_1=0.029, gamma_1=1.4, M_1 = 0.7, A_1 = 1, A_2 = 1,
+# ╠═╡ disabled = true
+#=╠═╡
+nfp_ipnewton = NozzleFlowProperties(
+	P_1 = 1.5u"atm", T_1=320u"K", MM_1=0.029u"kg/mol", gamma_1=1.4, M_1 = 0.7, A_1 = 1u"m^2", A_2 = 1u"m^2",
 	opt_prob_gen=prob_gen,
-	solver = Optim.BFGS(), return_sol=true)[2].original
+	solver = Optim.IPNewton(), return_sol=true)
+  ╠═╡ =#
+
+# ╔═╡ 58c0d1d2-0965-4cbb-8614-78c94f77ca98
+#=╠═╡
+nfp_ipnewton[1].F
+  ╠═╡ =#
+
+# ╔═╡ a30a3e1a-3166-4c29-8a4c-0cb9c30faa2d
+#=╠═╡
+residues(nfp_ipnewton[1])
+  ╠═╡ =#
+
+# ╔═╡ 6597ab94-dcf1-4d8b-9ac2-12c7a573de8e
+#=╠═╡
+nfp_ipnewton[2].original
+  ╠═╡ =#
 
 # ╔═╡ 304ea7d3-e4cc-43f6-8de4-8d368fd852d8
+# ╠═╡ disabled = true
+#=╠═╡
 nspnewton = NormalShockProperties(P_1 = 1.0, T_1=300, MM_1=0.029, gamma_1=1.4, M_1 = 1.5,
-	opt_prob_gen=DEFAULT_OPT_PROB_GENERATOR,
-	solver = Optim.BFGS()).original.minimum
+	opt_prob_gen=prob_gen,
+	solver = Optim.IPNewton())
+  ╠═╡ =#
+
+# ╔═╡ 5730da98-abff-496c-9742-28d29f288228
+solution = FlowProperties(
+	P = 1u"atm", 
+	T = 320u"K", 
+	v=1000u"m/s",
+	gamma = 1.4, 
+	R = 287u"J/kg/K",
+	initial_T0 = 1000u"K",
+	initial_a = 400u"m/s",
+	initial_P0 = 30u"atm",
+	opt_prob_gen=prob_gen,
+	solver=IPNewton(),
+	return_sol=true)
+
+# ╔═╡ c3be203d-9a36-4018-865a-9bdba5536129
+solution[2].original
+
+# ╔═╡ 090bfe22-906c-41ab-af31-904b94d3c34a
+solution[1] |> residues
+
+# ╔═╡ a520effd-39cc-47e0-b38f-d8dddc58f8ee
+solution[1].T0
+
+# ╔═╡ c9312014-4fe0-4232-b6ab-ece9d41f5c9a
+solution[1].T
+
+# ╔═╡ 64f67fa3-dbf6-476f-a172-8cc872f477e1
+solution[1].M
+
+# ╔═╡ dc9c1973-090b-4c72-a2fa-9147b8b2aec2
+solution[1].a * solution[1].M |> u"m/s"
+
+# ╔═╡ b541c739-88da-431a-97c3-fdb1d0aa886e
+solution[1].T * (1 + (solution[1].gamma-1)/2 * solution[1].M^2)
+
+# ╔═╡ c3276a60-3cb7-45e7-bf08-d26f52a19bf7
+solution[1].gamma
+
+# ╔═╡ 0874a237-ff84-4e03-a738-4bdfa103061a
+solution[1].R |> u"J/kg/K"
+
+# ╔═╡ 6e4acfc0-38c1-4c1e-912c-7cf5911c4fd5
+solution[1].v |> u"m/s"
+
+# ╔═╡ 8e5f9d0c-b222-480b-876f-c01140eacb95
+solution[1].T + (solution[1].gamma - 1) / (2*solution[1].gamma * solution[1].R) * solution[1].v^2
+
+# ╔═╡ 284eadfc-0f52-47bb-8480-4c5014f54303
+solution[1].a |> u"m/s"
+
+# ╔═╡ 3ef7afd8-ab86-4f0f-9126-afec5da246a5
+√(solution[1].gamma * solution[1].R * solution[1].T) |> u"m/s"
+
+# ╔═╡ c8427426-5855-475c-ab3a-5314b2b6e1ad
+# ╠═╡ disabled = true
+#=╠═╡
+Quasi1dimflowProperties(
+	P=1.5,
+	T=300.0, 
+	rho = 2.0, 
+	gamma = 1.4, 
+	Astar = 0.85, 
+	A = 1.0,
+	initial_M = 5.0,
+	opt_prob_gen=prob_gen,
+	solver = Optim.IPNewton())
+  ╠═╡ =#
+
+# ╔═╡ 1a586512-e467-4d7e-bf9d-38610e58081e
+# ╠═╡ disabled = true
+#=╠═╡
+nfp_supersonic = NozzleFlowProperties(
+	P0_1 = 1u"atm",
+	T0_1 = 288u"K",
+	M_1 = 1,
+	gamma_1 = 1.4,
+	R_1 = 287u"J/kg/K",
+	Astar_1 = 1u"m^2",
+	A_2 = 2u"m^2", 
+	initial_M_2 = 5,
+	solver = Optim.IPNewton(),
+	opt_prob_gen = prob_gen,
+	return_sol = true
+)
+  ╠═╡ =#
+
+# ╔═╡ a15b1a59-59cc-4fd6-8cbc-005ce3f9ee53
+#=╠═╡
+residues(nfp_supersonic[1])
+  ╠═╡ =#
+
+# ╔═╡ 190ecbe5-ac6e-4aae-b721-c0a08f4c4ef7
+#=╠═╡
+nfp_supersonic[2].original
+  ╠═╡ =#
+
+# ╔═╡ 7ad55c6e-2fa9-4ee1-a28a-4421d6c179cd
+# ╠═╡ disabled = true
+#=╠═╡
+nsp2 = NormalShockProperties(
+	v_1 = 680u"m/s",
+	T_1 = 288u"K",
+	P_1 = 1u"atm",
+	gamma_1 = 1.4,
+	a_2 = 441.79u"m/s",
+	initial_M_2 = 0.5,
+	return_sol=true,
+	opt_prob_gen = prob_gen,
+	solver = Optim.IPNewton()
+)
+  ╠═╡ =#
+
+# ╔═╡ 4aa52de0-95e9-4adb-b315-5df43f719665
+#=╠═╡
+nsp2[2].original
+  ╠═╡ =#
+
+# ╔═╡ 7b8fc774-c7d6-40a8-ba38-45c579751b84
+#=╠═╡
+nsp2[1].v_2 |> u"m/s"
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -114,10 +310,12 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
 OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
 Propulsion = "75c4fa84-4321-49ed-822f-77a37d13600d"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 Optimization = "~3.20.2"
 OptimizationOptimJL = "~0.1.14"
+Unitful = "~1.19.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -184,9 +382,9 @@ version = "7.7.0"
 
 [[ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "f5c3f5584f14322a0bd73362fd88b589dabd4019"
+git-tree-sha1 = "64d582bcb9c93ac741234789eeb4f16812413efb"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.5.3"
+version = "1.6.0"
 weakdeps = ["SparseArrays"]
 
     [ArrayLayouts.extensions]
@@ -770,13 +968,13 @@ deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[IntervalSets]]
-deps = ["Dates", "Random"]
-git-tree-sha1 = "3d8866c029dd6b16e69e0d4a939c4dfcb98fac47"
+git-tree-sha1 = "581191b15bcb56a2aa257e9c160085d0f128a380"
 uuid = "8197267c-284f-5f27-9208-e0e47529a953"
-version = "0.7.8"
-weakdeps = ["Statistics"]
+version = "0.7.9"
+weakdeps = ["Random", "Statistics"]
 
     [IntervalSets.extensions]
+    IntervalSetsRandomExt = "Random"
     IntervalSetsStatisticsExt = "Statistics"
 
 [[IrrationalConstants]]
@@ -862,9 +1060,9 @@ version = "1.3.1"
 
 [[LabelledArrays]]
 deps = ["ArrayInterface", "ChainRulesCore", "ForwardDiff", "LinearAlgebra", "MacroTools", "PreallocationTools", "RecursiveArrayTools", "StaticArrays"]
-git-tree-sha1 = "f12f2225c999886b69273f84713d1b9cb66faace"
+git-tree-sha1 = "d1f981fba6eb3ec393eede4821bca3f2b7592cd4"
 uuid = "2ee39098-c373-598a-b85f-a56591580800"
-version = "1.15.0"
+version = "1.15.1"
 
 [[LambertW]]
 git-tree-sha1 = "c5ffc834de5d61d00d2b0e18c96267cffc21f648"
@@ -1451,11 +1649,11 @@ version = "1.9.0"
 
 [[Propulsion]]
 deps = ["ForwardDiff", "NonlinearSolve", "Optim", "Optimization", "OptimizationOptimJL", "Plots", "Revise", "Symbolics", "Test", "Unitful"]
-git-tree-sha1 = "ec25e1efc4d90335343474f55e79078c50d8e0e1"
-repo-rev = "optimization-refactor"
+git-tree-sha1 = "bea01b603ac53aa4a190f2cb4d55c32b99e11296"
+repo-rev = "main"
 repo-url = "git@github.com:pekpuglia/Propulsion.git"
 uuid = "75c4fa84-4321-49ed-822f-77a37d13600d"
-version = "0.4.1"
+version = "0.4.2"
 
 [[Qt6Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
@@ -1644,15 +1842,17 @@ version = "1.1.0"
 
 [[SimpleNonlinearSolve]]
 deps = ["ADTypes", "ArrayInterface", "ConcreteStructs", "DiffEqBase", "FastClosures", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "MaybeInplace", "PrecompileTools", "Reexport", "SciMLBase", "StaticArraysCore"]
-git-tree-sha1 = "470c5f97af31fa35926b45eb01e53a46c8d7d35f"
+git-tree-sha1 = "66640954231d0e09888dddcd349cfa533c198368"
 uuid = "727e6d20-b764-4bd8-a329-72de5adea6c7"
-version = "1.3.1"
+version = "1.3.2"
 
     [SimpleNonlinearSolve.extensions]
+    SimpleNonlinearSolveChainRulesCoreExt = "ChainRulesCore"
     SimpleNonlinearSolvePolyesterForwardDiffExt = "PolyesterForwardDiff"
     SimpleNonlinearSolveStaticArraysExt = "StaticArrays"
 
     [SimpleNonlinearSolve.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     PolyesterForwardDiff = "98d1487c-24ca-40b6-b7ab-df2af84e126b"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
@@ -1711,9 +1911,9 @@ weakdeps = ["ChainRulesCore"]
 
 [[Static]]
 deps = ["IfElse"]
-git-tree-sha1 = "f295e0a1da4ca425659c57441bcb59abb035a4bc"
+git-tree-sha1 = "b366eb1eb68075745777d80861c6706c33f588ae"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.8.8"
+version = "0.8.9"
 
 [[StaticArrayInterface]]
 deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "SparseArrays", "Static", "SuiteSparse"]
@@ -2254,21 +2454,52 @@ version = "1.4.1+1"
 # ╠═ae54b2f8-b3c1-11ee-0827-8f8c2ce3aaf5
 # ╠═beb368ce-ce32-4ad0-9f19-658b588ad8e4
 # ╠═48e0a2ed-dc24-4d2e-ad81-fd9ed5adf535
+# ╠═255bdf22-d657-418a-9632-75392e0a36f2
 # ╟─c304bbe9-06d2-4e5a-b0de-b0d51ae9c265
 # ╠═075eb050-8cd7-4083-9413-97cef0839ed4
 # ╠═d6b8c891-ae6c-4a51-a499-0142e397d957
 # ╠═d6c94f87-c5f1-4593-bed4-11fe2b7e596a
 # ╠═528beb52-254f-467b-a20e-bbc677af47fe
 # ╟─2a7e5eb7-b8c8-4717-aad4-4943d6513ebe
-# ╠═5155755c-fff1-4a7d-902b-140aeee1451b
 # ╠═42047ab3-aa2f-420a-a1c5-72f87d6b1130
 # ╠═8092d2f4-b011-430b-a17e-d564eb3999e6
 # ╠═c4d84cba-4ebc-4b0b-a704-bdab3ea1ec0d
+# ╠═c0323baa-a8bc-49d8-a8ba-613cbda3c6cf
 # ╠═1ba9fcd1-12ee-4a0b-8a4c-f42a3c54c417
+# ╠═543c278e-eb49-461c-9daa-dea2670274ad
 # ╠═25cff5ca-0254-4108-acb0-0d49d0874d5e
+# ╠═bea85548-8fb7-4553-919d-4ab478f4851c
 # ╠═e67a58a0-0434-4a3c-b741-67eb337a6742
+# ╠═e0d6aa82-6514-4c1e-af19-84c4ce3d4bdf
 # ╠═07552200-dbb3-4525-922c-e7b1154bd28d
+# ╠═ead24abb-ef0c-4a7a-8f63-bebccd00f0c9
 # ╠═6d06c86b-456b-4c93-96e6-75501b57042e
+# ╠═58c0d1d2-0965-4cbb-8614-78c94f77ca98
+# ╠═a30a3e1a-3166-4c29-8a4c-0cb9c30faa2d
+# ╠═6597ab94-dcf1-4d8b-9ac2-12c7a573de8e
 # ╠═304ea7d3-e4cc-43f6-8de4-8d368fd852d8
+# ╠═fdfe9d23-6da7-48ad-b228-97de0f80ec6d
+# ╠═5155755c-fff1-4a7d-902b-140aeee1451b
+# ╠═5730da98-abff-496c-9742-28d29f288228
+# ╠═c3be203d-9a36-4018-865a-9bdba5536129
+# ╠═090bfe22-906c-41ab-af31-904b94d3c34a
+# ╠═a520effd-39cc-47e0-b38f-d8dddc58f8ee
+# ╠═c9312014-4fe0-4232-b6ab-ece9d41f5c9a
+# ╠═64f67fa3-dbf6-476f-a172-8cc872f477e1
+# ╠═dc9c1973-090b-4c72-a2fa-9147b8b2aec2
+# ╠═b541c739-88da-431a-97c3-fdb1d0aa886e
+# ╠═c3276a60-3cb7-45e7-bf08-d26f52a19bf7
+# ╠═0874a237-ff84-4e03-a738-4bdfa103061a
+# ╠═6e4acfc0-38c1-4c1e-912c-7cf5911c4fd5
+# ╠═8e5f9d0c-b222-480b-876f-c01140eacb95
+# ╠═284eadfc-0f52-47bb-8480-4c5014f54303
+# ╠═3ef7afd8-ab86-4f0f-9126-afec5da246a5
+# ╠═c8427426-5855-475c-ab3a-5314b2b6e1ad
+# ╠═1a586512-e467-4d7e-bf9d-38610e58081e
+# ╠═a15b1a59-59cc-4fd6-8cbc-005ce3f9ee53
+# ╠═190ecbe5-ac6e-4aae-b721-c0a08f4c4ef7
+# ╠═7ad55c6e-2fa9-4ee1-a28a-4421d6c179cd
+# ╠═4aa52de0-95e9-4adb-b315-5df43f719665
+# ╠═7b8fc774-c7d6-40a8-ba38-45c579751b84
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
