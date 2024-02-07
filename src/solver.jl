@@ -31,8 +31,8 @@ end
 opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
 """
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict, 
-        opt_prob_generator::Union{Function, Nothing} = DEFAULT_OPT_PROB_GENERATOR, 
-        solver = Optim.BFGS(), 
+        opt_prob_generator::Union{Function, Nothing} = nothing, 
+        solver = nothing, 
         return_sol=false
     )
     allvars = variables(T)
@@ -46,7 +46,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
 
     #sol.original.minimum
     opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
-    solver = something(solver, Optim.BFGS())
+    solver = something(solver, Optim.IPNewton())
     sol = solve(opt_prob_generator(opt_func_residues(T, missingvars, input_data), initial_guesses_vec), solver)
 
     ret = T(Dict(
@@ -58,8 +58,8 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
 end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
-        opt_prob_generator = DEFAULT_OPT_PROB_GENERATOR, 
-        solver = Optim.BFGS(),
+        opt_prob_generator = nothing, 
+        solver = nothing,
         return_sol=false
     )
     internal_units = units(T)
