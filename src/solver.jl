@@ -17,13 +17,16 @@ end
 using Optimization, OptimizationOptimJL, NonlinearSolve
 
 export DEFAULT_OPT_PROB_GENERATOR
-const DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0) -> begin
+DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0, lb, ub) -> begin
         opt_func = OptimizationFunction(
         (values, p) -> f_value_p(values, p) .^2 |> sum,
         AutoForwardDiff()
     )
 
-    OptimizationProblem(opt_func, u0, iterations = 10000)
+    OptimizationProblem(
+        opt_func, u0, 
+        iterations = 10000,
+        lb = lb, ub = ub)
 end
 
 #initial_guesses must be missingvars
@@ -47,7 +50,13 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     #sol.original.minimum
     opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
     solver = something(solver, Optim.IPNewton())
-    sol = solve(opt_prob_generator(opt_func_residues(T, missingvars, input_data), initial_guesses_vec), solver)
+    sol = solve(
+        opt_prob_generator(
+            opt_func_residues(T, missingvars, input_data), 
+            initial_guesses_vec,
+            √eps() * ones(size(initial_guesses_vec)),
+            fill(Inf, size(initial_guesses_vec))
+            ), solver)
 
     ret = T(Dict(
         Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
