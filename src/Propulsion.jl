@@ -1,7 +1,8 @@
 module Propulsion
 #todo
 
-#solve domain errors/add box constraints
+#https://github.com/ksil/LFPSQP.jl
+#use kg intead of g (speed scaling)
 
 #prioritize using intensive properties?
 
