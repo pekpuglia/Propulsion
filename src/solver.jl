@@ -88,6 +88,24 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
     end
 end
 ##
+#find all sets of 1 equation with 1 remaining variable
+#later: find all sets of 2 equations with the same 2 remaining variables
+#later: find all sets of N equations with the same N remaining variables
+export find_clique
+function find_clique(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
+    pv = participation_vector(T)
+    allvars = variables(T)
+    missingvars = setdiff(allvars, given_vars)
+
+    remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+
+    findall(==(1), length.(remaining_variables_per_equation))
+end
+
+function test_find_clique_1_var()
+    find_clique(MassProperties, [:P, :z, :MM]) == [1, 2, 3]
+end
+
 export overconstraint_validation
 function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
     pv = participation_vector(T)
