@@ -92,37 +92,36 @@ end
 #later: find all sets of 2 equations with the same 2 remaining variables
 #later: find all sets of N equations with the same N remaining variables
 export find_clique
-function find_clique(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol}, clique_order::Int)
-    pv = participation_vector(T)
-    allvars = variables(T)
-    missingvars = setdiff(allvars, given_vars)
-    #checar conjuntos repetidos!!!!
-    remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
-
+function find_clique(
+        T::Type{<:PhysicalProperties}, 
+        given_vars::AbstractVector{Symbol}, 
+        clique_order::Int,
+        remaining_variables_per_equation=nothing
+    )
+    if isnothing(remaining_variables_per_equation)
+        pv = participation_vector(T)
+        allvars = variables(T)
+        missingvars = setdiff(allvars, given_vars)
+        remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+    end
+    
     indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
 
-    # #look for a subset of equations with the same remaining variables
-    # subsets_remaining_variables::Vector{Vector{Vector{Symbol}}} = subsets(
-    #     #transform to a set bc order of variables may be different between equations
-    #     remaining_variables_per_equation[equations_clique_order_remaining_variables]
-    #     , clique_order
-    # ) |> collect
-
-    # clique_remaining_variables = filter(
-    #     vars -> [Ref(Set(vars)) .== Set.(els) for els in subsets_remaining_variables] .|> all |> any,
-    #     Set(remaining_variables_per_equation[equations_clique_order_remaining_variables])
-    # )
     #check if count is equal to clique order
     filter(
         i -> count(
-            rem_vars -> remaining_variables_per_equation[indices_equations_clique_order_remaining_variables], 
-            remaining_variables_per_equation),
+            rem_vars -> Set(rem_vars) == Set(remaining_variables_per_equation[i]), 
+            remaining_variables_per_equation) == clique_order,
         indices_equations_clique_order_remaining_variables
     )
 end
 
 function test_find_clique_1_var()
     find_clique(MassProperties, [:P, :z, :MM], 1) == [1, 2, 3]
+end
+
+function test_find_clique_2_var()
+    find_clique(CalorificProperties, [:P, :R, :gamma], 2) == [4, 5]
 end
 
 export overconstraint_validation
