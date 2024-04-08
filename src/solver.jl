@@ -97,7 +97,7 @@ function find_clique(
         given_vars::AbstractVector{Symbol}, 
         clique_order::Int,
         remaining_variables_per_equation=nothing
-    ) :: Vector{Vector{Int}} #list of sets of equations with the same remaining variables
+    ) :: Tuple{Vector{Vector{Int}}, Vector{Vector{Symbol}}} #list of sets of equations with the same remaining variables
     if isnothing(remaining_variables_per_equation)
         pv = participation_vector(T)
         allvars = variables(T)
@@ -108,22 +108,27 @@ function find_clique(
     indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
 
     clique_equations = Vector{Vector{Int}}()
+    clique_vars = Vector{Vector{Symbol}}()
+
     for ind in indices_equations_clique_order_remaining_variables
         rem_vars_i = remaining_variables_per_equation[ind]
         equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
-        if length(equations_with_those_variables) == clique_order
-            push!(clique_equations, equations_with_those_variables)
+        if length(equations_with_those_variables) == clique_order && (rem_vars_i ∉ clique_vars)
+            push!(clique_equations, equations_with_those_variables) 
+            push!(clique_vars, rem_vars_i)
         end
     end
-    unique(clique_equations)
+    clique_equations, clique_vars
 end
 
 function test_find_clique_1_var()
-    find_clique(MassProperties, [:P, :z, :MM], 1) == [[1], [2], [3]]
+    find_clique(MassProperties, [:P, :z, :MM], 1)[1] == [[1], [2], [3]] &&
+    find_clique(MassProperties, [:P, :z, :MM], 1)[2] == [[:T], [:R], [:rho]]
 end
 
 function test_find_clique_2_var()
-    find_clique(CalorificProperties, [:P, :R, :gamma], 2) == [[4, 5]]
+    find_clique(CalorificProperties, [:P, :R, :gamma], 2)[1] == [[4, 5]] &&
+    Set(find_clique(CalorificProperties, [:P, :R, :gamma], 2)[2][1]) == Set([:cp, :cv])
 end
 
 export overconstraint_validation
