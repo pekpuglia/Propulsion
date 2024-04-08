@@ -116,6 +116,10 @@ function find_clique(
     )
 end
 
+function test_find_clique_0_var()
+    find_clique(ThermodynamicProperties, [:P, :z, :T], 0) == [1]
+end
+
 function test_find_clique_1_var()
     find_clique(MassProperties, [:P, :z, :MM], 1) == [1, 2, 3]
 end
