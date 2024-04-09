@@ -88,13 +88,34 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
     end
 end
 ##
-struct CliqueResult2
+@enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations
+struct CliqueResult4
     expected_clique_order::Int
     clique_equations::Vector{Vector{Int}}
     clique_vars::Vector{Vector{Symbol}}
+    diagnostic::Vector{CliqueDiagnostic}
+    #assumes all elements have the same length
+    function CliqueResult4(expected_clique_order, clique_equations, clique_vars)
+        diagnostic = [
+            if length(eq) < expected_clique_order
+                TooFewEquations
+            elseif length(eq) == expected_clique_order
+                CliqueFound
+            else
+                TooManyEquations
+            end
+            for eq in clique_equations
+        ]
+        new(
+            expected_clique_order,
+            clique_equations,
+            clique_vars,
+            diagnostic
+        )
+    end
 end
 
-CliqueResult = CliqueResult2
+CliqueResult = CliqueResult4
 
 export find_clique
 function find_clique(
@@ -127,13 +148,17 @@ function find_clique(
 end
 
 function test_find_clique_1_var()
-    find_clique(MassProperties, [:P, :z, :MM], 1)[1] == [[1], [2], [3]] &&
-    find_clique(MassProperties, [:P, :z, :MM], 1)[2] == [[:T], [:R], [:rho]]
+    clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
+    clique_res.clique_equations == [[1], [2], [3]] &&
+    clique_res.clique_vars == [[:T], [:R], [:rho]] &&
+    all(clique_res.diagnostic .== CliqueFound)
 end
 
 function test_find_clique_2_var()
-    find_clique(CalorificProperties, [:P, :R, :gamma], 2)[1] == [[4, 5]] &&
-    Set(find_clique(CalorificProperties, [:P, :R, :gamma], 2)[2][1]) == Set([:cp, :cv])
+    clique_res = find_clique(CalorificProperties, [:P, :R, :gamma], 2)
+    i = findfirst(==(CliqueFound), clique_res.diagnostic)
+    clique_res.clique_equations[i] == [4, 5] &&
+    Set(clique_res.clique_vars[i]) == Set([:cp, :cv])
 end
 
 export overconstraint_validation
