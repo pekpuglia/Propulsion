@@ -161,6 +161,7 @@ function test_find_clique_2_var()
     Set(clique_res.clique_vars[i]) == Set([:cp, :cv])
 end
 
+#clean
 export overconstraint_validation
 function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
     pv = participation_vector(T)
@@ -181,18 +182,29 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     #signal over/under-constrain!
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
+        clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
+        if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
+            over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
+            
+            over_constrained_equation_indices = cat(clique_result.clique_equations[over_constrained_indices]..., dims=1)
+            over_constrained_variables = cat(clique_result.clique_vars[over_constrained_indices]..., dims=1)
+            
+            over_constrained_equations = sym_residues[over_constrained_equation_indices]
 
-        clique_equation_lists, clique_variable_lists = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
-
+            error("variables $over_constrained_variables are overconstrained\nby the following equations: $over_constrained_equations")
+        end
+        found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
+        found_clique_equations = clique_result.clique_equations[found_clique_indices]
+        found_clique_variables = clique_result.clique_vars[found_clique_indices]
         #try higher order cliques
-        if clique_order < max_clique_order && isempty(clique_equation_lists)
+        if clique_order < max_clique_order && isempty(found_clique_equations)
             clique_order += 1
         end
         #try again from the simple equations
-        if clique_order > 1 && !isempty(clique_equation_lists)
+        if clique_order > 1 && !isempty(found_clique_equations)
             clique_order = 1
         end
-        for var_list in clique_variable_lists
+        for var_list in found_clique_variables
             remaining_variables_per_equation = [
                 filter(∉(var_list), rem_vars)
                 for rem_vars in remaining_variables_per_equation
@@ -200,12 +212,9 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         end
 
     end
-    # if all(isempty.(remaining_variables_per_equation))
-    #     return true
-    # else 
-    #     error("variables ")
-    # end
-    remaining_variables_per_equation
+    #should always be true, if it returns false 
+    #and no error pops up there's a bug 🤷
+    all(remaining_variables_per_equation .|> isempty)
 end
 
 ##
