@@ -88,16 +88,21 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
     end
 end
 ##
-#find all sets of 1 equation with 1 remaining variable
-#later: find all sets of 2 equations with the same 2 remaining variables
-#later: find all sets of N equations with the same N remaining variables
+struct CliqueResult2
+    expected_clique_order::Int
+    clique_equations::Vector{Vector{Int}}
+    clique_vars::Vector{Vector{Symbol}}
+end
+
+CliqueResult = CliqueResult2
+
 export find_clique
 function find_clique(
         T::Type{<:PhysicalProperties}, 
         given_vars::AbstractVector{Symbol}, 
         clique_order::Int,
         remaining_variables_per_equation=nothing
-    ) :: Tuple{Vector{Vector{Int}}, Vector{Vector{Symbol}}} #list of sets of equations with the same remaining variables
+    ) :: CliqueResult #list of sets of equations with the same remaining variables
     if isnothing(remaining_variables_per_equation)
         pv = participation_vector(T)
         allvars = variables(T)
@@ -113,12 +118,12 @@ function find_clique(
     for ind in indices_equations_clique_order_remaining_variables
         rem_vars_i = remaining_variables_per_equation[ind]
         equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
-        if length(equations_with_those_variables) == clique_order && (rem_vars_i ∉ clique_vars)
+        if rem_vars_i ∉ clique_vars
             push!(clique_equations, equations_with_those_variables) 
             push!(clique_vars, rem_vars_i)
         end
     end
-    clique_equations, clique_vars
+    CliqueResult(clique_order, clique_equations, clique_vars)
 end
 
 function test_find_clique_1_var()
@@ -170,8 +175,12 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         end
 
     end
+    # if all(isempty.(remaining_variables_per_equation))
+    #     return true
+    # else 
+    #     error("variables ")
+    # end
     remaining_variables_per_equation
-
 end
 
 ##
