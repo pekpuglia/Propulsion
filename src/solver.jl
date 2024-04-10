@@ -82,7 +82,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
 
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
-        clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
+        clique_result = find_clique(T, keys(known_data) |> collect, clique_order, remaining_variables_per_equation)
         
         found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
         found_clique_equations = clique_result.clique_equations[found_clique_indices]
@@ -112,7 +112,23 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
                 AutoForwardDiff()
             )
             #missing: initial guess for variables to solve now
-            # opt_problem = OptimizationProblem(opt_function, )
+            initial_guess = getindex.(Ref(initial_guesses_dict), var_list)
+            opt_problem = OptimizationProblem(
+                opt_function, initial_guess,
+                lb = √eps() * ones(size(initial_guess)),
+                ub = fill(Inf, size(initial_guess)))
+            sol = solve(opt_problem, Optim.IPNewton())
+            @assert Bool(sol.retcode)
+
+            #updating loop variables
+            known_data = Dict(
+                known_data...,
+                [var => val for (var, val) in zip(var_list, sol.u)]...
+            )
+            
+            missingvars = setdiff(missingvars, var_list)
+
+            remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
         end
         
         #try higher order cliques
@@ -124,6 +140,8 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
             clique_order = 1
         end
     end
+
+    T(known_data)
 end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
