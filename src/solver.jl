@@ -66,13 +66,20 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     # (return_sol) ? (ret, sol) : ret
     pv = participation_vector(T)
     allvars = variables(T)
-    given_vars = keys(input_data)
-    missingvars = setdiff(allvars, given_vars)
+    given_vars = keys(input_data) |> collect
+    missingvars = setdiff(allvars, given_vars) |> collect
     remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+
+    known_data = deepcopy(input_data)
+
+    initial_guesses_dict = Dict(mv => 
+        Float64((mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0)
+        for mv in missingvars
+    )
+
 
     max_clique_order = length(missingvars)
 
-    #
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
         clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
@@ -83,9 +90,23 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
         
         for (var_list, eq_list) in zip(found_clique_variables, found_clique_equations)
             #solve for var list
-            #need a way of computing only some residues at a time
-            residue_function = opt_func_residues(T, missingvars, input_data)
-            
+            residue_index = eq_list
+            vars_to_solve_for = var_list
+            #i have known_data
+            #guess for missing vars which won't be solved this iteration
+            unsolved_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
+            unsolved_missing_var_values = getindex.(Ref(initial_guesses_dict), unsolved_missing_vars)
+            display((var_list, eq_list))
+            display(unsolved_missing_vars)
+            display(unsolved_missing_var_values)
+            break
+            # background_vars 
+            # residue_function = (values, p) -> residues(T(Dict(
+            #     Dict(var => value for (var, value) in zip(var_list, values))..., 
+            #     Dict(other_var => initial_guess for (other_var, initial_guess) in zip())
+            #     input_data...
+            # )))
+        
         end
         
         #try higher order cliques
