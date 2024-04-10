@@ -78,7 +78,7 @@ function test_normal_shock_inf_or_nan()
            a_2 = 441.79u"m/s"
        )
 end
-
+#broken bc overconstraint_validation returns false!!!
 @test_broken test_normal_shock_inf_or_nan() isa NormalShockProperties
 ############################################################################
 #internal coherence tests/unit tests
