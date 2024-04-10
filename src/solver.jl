@@ -94,19 +94,25 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
             vars_to_solve_for = var_list
             #i have known_data
             #guess for missing vars which won't be solved this iteration
-            unsolved_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
-            unsolved_missing_var_values = getindex.(Ref(initial_guesses_dict), unsolved_missing_vars)
-            display((var_list, eq_list))
-            display(unsolved_missing_vars)
-            display(unsolved_missing_var_values)
-            break
-            # background_vars 
-            # residue_function = (values, p) -> residues(T(Dict(
-            #     Dict(var => value for (var, value) in zip(var_list, values))..., 
-            #     Dict(other_var => initial_guess for (other_var, initial_guess) in zip())
-            #     input_data...
-            # )))
-        
+            other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
+            other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
+            
+            residue_function = (values, p) -> residues(T(Dict(
+                Dict(var => value for (var, value) in zip(var_list, values))..., 
+                Dict(other_var => other_value 
+                    for (other_var, other_value) in zip(
+                                                other_missing_vars, 
+                                                other_missing_values
+                ))...,
+                known_data...
+            )))[residue_index]
+            
+            opt_function = OptimizationFunction(
+                (values, p) -> residue_function(values, p) .^ 2 |> sum,
+                AutoForwardDiff()
+            )
+            #missing: initial guess for variables to solve now
+            # opt_problem = OptimizationProblem(opt_function, )
         end
         
         #try higher order cliques
