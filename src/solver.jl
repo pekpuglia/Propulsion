@@ -18,7 +18,7 @@ using Optimization, OptimizationOptimJL, NonlinearSolve
 
 export DEFAULT_OPT_PROB_GENERATOR
 DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0, lb, ub) -> begin
-        opt_func = OptimizationFunction(
+    opt_func = OptimizationFunction(
         (values, p) -> f_value_p(values, p) .^2 |> sum,
         AutoForwardDiff()
     )
@@ -38,32 +38,65 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
         solver = nothing, 
         return_sol=false
     )
-    allvars = variables(T)
+    # allvars = variables(T)
 
-    missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
+    # missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
     
-    initial_guesses_vec = [
-        (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0
-        for mv in missingvars
-    ] .|> Float64
+    # initial_guesses_vec = [
+    #     (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0
+    #     for mv in missingvars
+    # ] .|> Float64
 
-    #sol.original.minimum
-    opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
-    solver = something(solver, Optim.IPNewton())
-    sol = solve(
-        opt_prob_generator(
-            opt_func_residues(T, missingvars, input_data), 
-            initial_guesses_vec,
-            √eps() * ones(size(initial_guesses_vec)),
-            fill(Inf, size(initial_guesses_vec))
-            ), solver)
+    # #sol.original.minimum
+    # opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
+    # solver = something(solver, Optim.IPNewton())
+    # sol = solve(
+    #     opt_prob_generator(
+    #         opt_func_residues(T, missingvars, input_data), 
+    #         initial_guesses_vec,
+    #         √eps() * ones(size(initial_guesses_vec)),
+    #         fill(Inf, size(initial_guesses_vec))
+    #         ), solver)
 
-    ret = T(Dict(
-        Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-        Dict(k => Float64(v) for (k, v) in input_data)...
-    ))
-    return_sol = something(return_sol, false)
-    (return_sol) ? (ret, sol) : ret
+    # ret = T(Dict(
+    #     Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
+    #     Dict(k => Float64(v) for (k, v) in input_data)...
+    # ))
+    # return_sol = something(return_sol, false)
+    # (return_sol) ? (ret, sol) : ret
+    pv = participation_vector(T)
+    allvars = variables(T)
+    given_vars = keys(input_data)
+    missingvars = setdiff(allvars, given_vars)
+    remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+
+    max_clique_order = length(missingvars)
+
+    #
+    clique_order = 1
+    for attempts_at_finding_solvable_var in 1:max_clique_order
+        clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
+        
+        found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
+        found_clique_equations = clique_result.clique_equations[found_clique_indices]
+        found_clique_variables = clique_result.clique_vars[found_clique_indices]
+        
+        for (var_list, eq_list) in zip(found_clique_variables, found_clique_equations)
+            #solve for var list
+            #need a way of computing only some residues at a time
+            residue_function = opt_func_residues(T, missingvars, input_data)
+            
+        end
+        
+        #try higher order cliques
+        if clique_order < max_clique_order && isempty(found_clique_equations)
+            clique_order += 1
+        end
+        #try again from the simple equations
+        if clique_order > 1 && !isempty(found_clique_equations)
+            clique_order = 1
+        end
+    end
 end
 
 function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
@@ -89,13 +122,13 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
 end
 ##
 @enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations
-struct CliqueResult4
+struct CliqueResult
     expected_clique_order::Int
     clique_equations::Vector{Vector{Int}}
     clique_vars::Vector{Vector{Symbol}}
     diagnostic::Vector{CliqueDiagnostic}
     #assumes all elements have the same length
-    function CliqueResult4(expected_clique_order, clique_equations, clique_vars)
+    function CliqueResult(expected_clique_order, clique_equations, clique_vars)
         diagnostic = [
             if length(eq) < expected_clique_order
                 TooFewEquations
@@ -114,8 +147,6 @@ struct CliqueResult4
         )
     end
 end
-
-CliqueResult = CliqueResult4
 
 export find_clique
 function find_clique(
@@ -196,6 +227,12 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
         found_clique_equations = clique_result.clique_equations[found_clique_indices]
         found_clique_variables = clique_result.clique_vars[found_clique_indices]
+        for var_list in found_clique_variables
+            remaining_variables_per_equation = [
+                filter(∉(var_list), rem_vars)
+                for rem_vars in remaining_variables_per_equation
+            ]
+        end
         #try higher order cliques
         if clique_order < max_clique_order && isempty(found_clique_equations)
             clique_order += 1
@@ -204,13 +241,6 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         if clique_order > 1 && !isempty(found_clique_equations)
             clique_order = 1
         end
-        for var_list in found_clique_variables
-            remaining_variables_per_equation = [
-                filter(∉(var_list), rem_vars)
-                for rem_vars in remaining_variables_per_equation
-            ]
-        end
-
     end
     #should always be true, if it returns false 
     #and no error pops up there's a bug 🤷
