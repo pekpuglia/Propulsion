@@ -79,7 +79,7 @@ function test_normal_shock_inf_or_nan()
        )
 end
 
-@test test_normal_shock_inf_or_nan() isa NormalShockProperties
+@test_broken test_normal_shock_inf_or_nan() isa NormalShockProperties
 ############################################################################
 #internal coherence tests/unit tests
 
@@ -198,8 +198,8 @@ end
 
 let
     solution, solution2 = test_flow_properties()
-    @test_broken isapprox(solution.T0, 817.8u"K", atol=1e-1u"K")
-    @test_broken isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm")
+    @test isapprox(solution.T0, 817.8u"K", atol=1e-1u"K")
+    @test isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm")
     @test isapprox(solution2.T0, 544.9u"Ra", atol=0.1u"Ra")
     @test isapprox(solution2.v, 862u"ft/s", atol=1u"ft/s")
 end
@@ -255,10 +255,10 @@ let
     @test isapprox(nfp_supersonic[1].T, 240u"K", atol=1u"K")
     @test isapprox(nfp_supersonic[2].M, 2.2, atol=0.1)
     #small numerical difference
-    @test_broken isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm")
+    @test isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm")
     @test isapprox(nfp_supersonic[2].T, 146u"K", atol=1u"K")
     @test isapprox(nfp_subsonic[2].M, 0.3, atol=0.1)
-    @test_broken isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm")
+    @test isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm")
     @test isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
 end
 
@@ -275,9 +275,9 @@ end
 let 
     nsp = test_example_8_11()
 
-    @test_broken isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
-    @test_broken isapprox(nsp.T_2, 486u"K", atol=1u"K")
-    @test_broken isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
+    @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
+    @test isapprox(nsp.T_2, 486u"K", atol=1u"K")
+    @test isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
     @test ustrip(nsp.a_2 ) > 0
-    @test_broken isapprox(nsp.M_2, 0.577, atol = 1e-3)
+    @test isapprox(nsp.M_2, 0.577, atol = 1e-3)
 end

@@ -38,32 +38,6 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
         solver = nothing, 
         return_sol=false
     )
-    # allvars = variables(T)
-
-    # missingvars = (setdiff(Set(allvars), Set(keys(input_data))) |> collect)
-    
-    # initial_guesses_vec = [
-    #     (mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0
-    #     for mv in missingvars
-    # ] .|> Float64
-
-    # #sol.original.minimum
-    # opt_prob_generator = something(opt_prob_generator, DEFAULT_OPT_PROB_GENERATOR)
-    # solver = something(solver, Optim.IPNewton())
-    # sol = solve(
-    #     opt_prob_generator(
-    #         opt_func_residues(T, missingvars, input_data), 
-    #         initial_guesses_vec,
-    #         √eps() * ones(size(initial_guesses_vec)),
-    #         fill(Inf, size(initial_guesses_vec))
-    #         ), solver)
-
-    # ret = T(Dict(
-    #     Dict(missingvar => u for (missingvar, u) in zip(missingvars, sol.u))...,
-    #     Dict(k => Float64(v) for (k, v) in input_data)...
-    # ))
-    # return_sol = something(return_sol, false)
-    # (return_sol) ? (ret, sol) : ret
     pv = participation_vector(T)
     allvars = variables(T)
     given_vars = keys(input_data) |> collect
@@ -140,7 +114,6 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
             clique_order = 1
         end
     end
-
     T(known_data)
 end
 
