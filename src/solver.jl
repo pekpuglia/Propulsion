@@ -148,15 +148,25 @@ struct CliqueResult
     #assumes all elements have the same length
     function CliqueResult(expected_clique_order, clique_equations, clique_vars)
         diagnostic = [
-            if length(eq) < expected_clique_order
+            if length(vars) > length(eqs)
                 TooFewEquations
-            elseif length(eq) == expected_clique_order
+            elseif length(vars) == length(eqs)
                 CliqueFound
             else
                 TooManyEquations
             end
-            for eq in clique_equations
+            for (vars, eqs) in zip(clique_vars, clique_equations)
         ]
+
+        #if found cliques, filter for them
+        #otherwise return the full list of not found cliques
+        if any(diagnostic .== CliqueFound)
+            indices = findall(diagnostic .== CliqueFound)
+            clique_equations = clique_equations[indices]
+            clique_vars = clique_vars[indices]
+            diagnostic = diagnostic[indices]
+        end
+
         new(
             expected_clique_order,
             clique_equations,
@@ -165,6 +175,8 @@ struct CliqueResult
         )
     end
 end
+
+#N cliques de ordem M são um clique de ordem N*M
 
 using IterTools
 #nem todas as variáveis precisam aparecer em todas as equações
@@ -203,9 +215,35 @@ function find_clique(
     # end
     # CliqueResult(clique_order, clique_equations, clique_vars)
 
-    for equation_subset = subsets(1:length(allvars), clique_order)
+    clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
+
+    unique_vars = []
+    for equation_subset = clique_candidate_subsets
         #check that we have clique order distinct variables
+        push!(unique_vars, unique(
+            cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
     end
+    clique_equations = Vector{Vector{Int}}()
+    clique_vars = Vector{Vector{Symbol}}()
+
+    #check that no other subset has the same vars
+    for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
+        #concatenate all of them!
+        subset_indices_with_these_variables = findall(other_unique_variable_list -> 
+            Set(other_unique_variable_list) == Set(unique_var), 
+            unique_vars
+        )
+
+        if unique_var ∉ clique_vars && !isempty(unique_var) && 
+                length(subset_indices_with_these_variables) == 1
+            new_found_clique_equations = (clique_candidate_subsets |> collect)[subset_indices_with_these_variables[1]]
+            push!(clique_equations, new_found_clique_equations)
+            push!(clique_vars, unique_var)
+        end
+        
+    end
+    
+    CliqueResult(clique_order, clique_equations, clique_vars)
 end
 
 function test_find_clique_1_var()
