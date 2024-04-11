@@ -166,6 +166,7 @@ struct CliqueResult
     end
 end
 
+using IterTools
 #nem todas as variáveis precisam aparecer em todas as equações
 #a + b = 0
 #b + c = 0
@@ -178,27 +179,33 @@ function find_clique(
         clique_order::Int,
         remaining_variables_per_equation=nothing
     ) :: CliqueResult #list of sets of equations with the same remaining variables
+    
+    allvars = variables(T)
+    missingvars = setdiff(allvars, given_vars)
     if isnothing(remaining_variables_per_equation)
         pv = participation_vector(T)
-        allvars = variables(T)
-        missingvars = setdiff(allvars, given_vars)
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
-    
-    indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
 
-    clique_equations = Vector{Vector{Int}}()
-    clique_vars = Vector{Vector{Symbol}}()
+    # #wrong
+    # indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
 
-    for ind in indices_equations_clique_order_remaining_variables
-        rem_vars_i = remaining_variables_per_equation[ind]
-        equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
-        if rem_vars_i ∉ clique_vars
-            push!(clique_equations, equations_with_those_variables) 
-            push!(clique_vars, rem_vars_i)
-        end
+    # clique_equations = Vector{Vector{Int}}()
+    # clique_vars = Vector{Vector{Symbol}}()
+
+    # for ind in indices_equations_clique_order_remaining_variables
+    #     rem_vars_i = remaining_variables_per_equation[ind]
+    #     equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
+    #     if rem_vars_i ∉ clique_vars
+    #         push!(clique_equations, equations_with_those_variables) 
+    #         push!(clique_vars, rem_vars_i)
+    #     end
+    # end
+    # CliqueResult(clique_order, clique_equations, clique_vars)
+
+    for equation_subset = subsets(1:length(allvars), clique_order)
+        #check that we have clique order distinct variables
     end
-    CliqueResult(clique_order, clique_equations, clique_vars)
 end
 
 function test_find_clique_1_var()
