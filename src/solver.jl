@@ -213,44 +213,57 @@ function find_clique(
             push!(clique_vars, rem_vars_i)
         end
     end
-    # CliqueResult(clique_order, clique_equations, clique_vars)
+    CliqueResult(clique_order, clique_equations, clique_vars)
+end
 
-    # clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
+function find_clique2(
+    T::Type{<:PhysicalProperties}, 
+    given_vars::AbstractVector{Symbol}, 
+    clique_order::Int,
+    remaining_variables_per_equation=nothing
+) :: CliqueResult #list of sets of equations with the same remaining variables
+    allvars = variables(T)
+    missingvars = setdiff(allvars, given_vars)
+    if isnothing(remaining_variables_per_equation)
+        pv = participation_vector(T)
+        remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+    end
+    clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
 
-    # unique_vars = []
-    # for equation_subset = clique_candidate_subsets
-    #     #check that we have clique order distinct variables
-    #     push!(unique_vars, unique(
-    #         cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
-    # end
+    unique_vars = []
+    for equation_subset = clique_candidate_subsets
+        #check that we have clique order distinct variables
+        push!(unique_vars, unique(
+            cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
+    end
 
-    # clique_equations = Vector{Vector{Int}}()
-    # clique_vars = Vector{Vector{Symbol}}()
+    clique_equations = Vector{Vector{Int}}()
+    clique_vars = Vector{Vector{Symbol}}()
     
-    # nonempty_indices = findall(x -> !isempty(x), unique_vars)
-    # unique_vars = unique_vars[nonempty_indices]
-    # clique_candidate_subsets = (clique_candidate_subsets |> collect)[nonempty_indices]
-    # #check that no other subset has the same vars
-    # for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
-    #     #usar equation subset?
-    #     if unique_var ∉ clique_vars && !isempty(unique_var)
-    #         subset_indices_with_these_variables = findall(other_unique_variable_list -> 
-    #             Set(other_unique_variable_list) == Set(unique_var), 
-    #             unique_vars
-    #         )
+    nonempty_indices = findall(x -> !isempty(x), unique_vars)
+    unique_vars = unique_vars[nonempty_indices]
+    clique_candidate_subsets = (clique_candidate_subsets |> collect)[nonempty_indices]
+    #check that no other subset has the same vars
+    for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
+        #usar equation subset?
+        if unique_var ∉ clique_vars && !isempty(unique_var)
+            subset_indices_with_these_variables = findall(other_unique_variable_list -> 
+                Set(other_unique_variable_list) == Set(unique_var), 
+                unique_vars
+            )
 
-    #         new_found_clique_equations = cat(
-    #             (clique_candidate_subsets)[subset_indices_with_these_variables]...,
-    #             dims=1) |> unique
+            new_found_clique_equations = cat(
+                (clique_candidate_subsets)[subset_indices_with_these_variables]...,
+                dims=1) |> unique
 
-    #         filter!(eq -> !isempty(remaining_variables_per_equation[eq]), new_found_clique_equations)
+            filter!(eq -> !isempty(remaining_variables_per_equation[eq]), new_found_clique_equations)
 
-    #         if length(new_found_clique_equations) == clique_order || length(unique_var) == clique_order
-    #             push!(clique_equations, new_found_clique_equations)
-    #             push!(clique_vars, unique_var)
-    #         end
-    #     end
-    # end
+            if length(new_found_clique_equations) == clique_order || length(unique_var) == clique_order
+                push!(clique_equations, new_found_clique_equations)
+                push!(clique_vars, unique_var)
+            end
+        end
+    end
     
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
