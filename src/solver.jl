@@ -166,6 +166,11 @@ struct CliqueResult
     end
 end
 
+#nem todas as variáveis precisam aparecer em todas as equações
+#a + b = 0
+#b + c = 0
+#a + c = 0
+#é um clique de ordem 3
 export find_clique
 function find_clique(
         T::Type{<:PhysicalProperties}, 
