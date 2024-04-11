@@ -228,15 +228,15 @@ function find_clique(
 
     #check that no other subset has the same vars
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
-        #concatenate all of them!
+        
         subset_indices_with_these_variables = findall(other_unique_variable_list -> 
             Set(other_unique_variable_list) == Set(unique_var), 
             unique_vars
         )
-
-        if unique_var ∉ clique_vars && !isempty(unique_var) && 
-                length(subset_indices_with_these_variables) == 1
-            new_found_clique_equations = (clique_candidate_subsets |> collect)[subset_indices_with_these_variables[1]]
+        if unique_var ∉ clique_vars && !isempty(unique_var)
+            new_found_clique_equations = cat(
+                (clique_candidate_subsets |> collect)[subset_indices_with_these_variables]...,
+                dims=1) |> unique
             push!(clique_equations, new_found_clique_equations)
             push!(clique_vars, unique_var)
         end
@@ -245,7 +245,7 @@ function find_clique(
     
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
-
+#find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
     clique_res.clique_equations == [[1], [2], [3]] &&
