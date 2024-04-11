@@ -150,7 +150,7 @@ struct CliqueResult
         diagnostic = [
             if length(vars) > length(eqs)
                 TooFewEquations
-            elseif length(vars) == length(eqs)
+            elseif length(vars) == length(eqs) == expected_clique_order
                 CliqueFound
             else
                 TooManyEquations
