@@ -152,7 +152,7 @@ struct CliqueResult
                 TooFewEquations
             elseif length(vars) == length(eqs) == expected_clique_order
                 CliqueFound
-            else
+            elseif length(vars) < length(eqs)
                 TooManyEquations
             end
             for (vars, eqs) in zip(clique_vars, clique_equations)
@@ -199,53 +199,63 @@ function find_clique(
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
 
-    # #wrong
-    # indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
+    #wrong
+    indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
 
-    # clique_equations = Vector{Vector{Int}}()
-    # clique_vars = Vector{Vector{Symbol}}()
-
-    # for ind in indices_equations_clique_order_remaining_variables
-    #     rem_vars_i = remaining_variables_per_equation[ind]
-    #     equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
-    #     if rem_vars_i ∉ clique_vars
-    #         push!(clique_equations, equations_with_those_variables) 
-    #         push!(clique_vars, rem_vars_i)
-    #     end
-    # end
-    # CliqueResult(clique_order, clique_equations, clique_vars)
-
-    clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
-
-    unique_vars = []
-    for equation_subset = clique_candidate_subsets
-        #check that we have clique order distinct variables
-        push!(unique_vars, unique(
-            cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
-    end
     clique_equations = Vector{Vector{Int}}()
     clique_vars = Vector{Vector{Symbol}}()
 
-    #check that no other subset has the same vars
-    for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
-        
-        subset_indices_with_these_variables = findall(other_unique_variable_list -> 
-            Set(other_unique_variable_list) == Set(unique_var), 
-            unique_vars
-        )
-        if unique_var ∉ clique_vars && !isempty(unique_var)
-            new_found_clique_equations = cat(
-                (clique_candidate_subsets |> collect)[subset_indices_with_these_variables]...,
-                dims=1) |> unique
-            push!(clique_equations, new_found_clique_equations)
-            push!(clique_vars, unique_var)
+    for ind in indices_equations_clique_order_remaining_variables
+        rem_vars_i = remaining_variables_per_equation[ind]
+        equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
+        if rem_vars_i ∉ clique_vars
+            push!(clique_equations, equations_with_those_variables) 
+            push!(clique_vars, rem_vars_i)
         end
-        
     end
+    # CliqueResult(clique_order, clique_equations, clique_vars)
+
+    # clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
+
+    # unique_vars = []
+    # for equation_subset = clique_candidate_subsets
+    #     #check that we have clique order distinct variables
+    #     push!(unique_vars, unique(
+    #         cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
+    # end
+
+    # clique_equations = Vector{Vector{Int}}()
+    # clique_vars = Vector{Vector{Symbol}}()
+    
+    # nonempty_indices = findall(x -> !isempty(x), unique_vars)
+    # unique_vars = unique_vars[nonempty_indices]
+    # clique_candidate_subsets = (clique_candidate_subsets |> collect)[nonempty_indices]
+    # #check that no other subset has the same vars
+    # for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
+    #     #usar equation subset?
+    #     if unique_var ∉ clique_vars && !isempty(unique_var)
+    #         subset_indices_with_these_variables = findall(other_unique_variable_list -> 
+    #             Set(other_unique_variable_list) == Set(unique_var), 
+    #             unique_vars
+    #         )
+
+    #         new_found_clique_equations = cat(
+    #             (clique_candidate_subsets)[subset_indices_with_these_variables]...,
+    #             dims=1) |> unique
+
+    #         filter!(eq -> !isempty(remaining_variables_per_equation[eq]), new_found_clique_equations)
+
+    #         if length(new_found_clique_equations) == clique_order || length(unique_var) == clique_order
+    #             push!(clique_equations, new_found_clique_equations)
+    #             push!(clique_vars, unique_var)
+    #         end
+    #     end
+    # end
     
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z
+#find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - can't find correct cp, cv clique
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
     clique_res.clique_equations == [[1], [2], [3]] &&
@@ -281,6 +291,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     #signal over/under-constrain!
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
+        display(attempts_at_finding_solvable_var)
         clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
         if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
             over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
