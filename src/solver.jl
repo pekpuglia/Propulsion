@@ -102,7 +102,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
         end
         
         #try higher order cliques
-        if clique_order < max_clique_order && clique_result.diagnostic == NoCliqueFound
+        if clique_order < max_clique_order && clique_result.diagnostic != CliqueFound
             clique_order += 1
         end
         #try again from the simple equations
@@ -182,6 +182,7 @@ selectindices(v, indices) = Iterators.map(pair -> last(pair),
 #é um clique de ordem 3
 using Base.Iterators
 using IterTools
+export find_clique
 function find_clique(
     T::Type{<:PhysicalProperties}, 
     given_vars::AbstractVector{Symbol}, 
@@ -272,7 +273,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
             ]
         end
         #try higher order cliques
-        if clique_order < max_clique_order && clique_result.diagnostic == NoCliqueFound
+        if clique_order < max_clique_order && clique_result.diagnostic != CliqueFound
             clique_order += 1
         end
         #try again from the simple equations
