@@ -139,6 +139,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
     end
 end
 ##
+#change to single clique repr
 @enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations
 struct CliqueResult
     expected_clique_order::Int
@@ -176,46 +177,6 @@ struct CliqueResult
     end
 end
 
-#N cliques de ordem M são um clique de ordem N*M
-
-using IterTools
-#nem todas as variáveis precisam aparecer em todas as equações
-#a + b = 0
-#b + c = 0
-#a + c = 0
-#é um clique de ordem 3
-export find_clique
-function find_clique(
-        T::Type{<:PhysicalProperties}, 
-        given_vars::AbstractVector{Symbol}, 
-        clique_order::Int,
-        remaining_variables_per_equation=nothing
-    ) :: CliqueResult #list of sets of equations with the same remaining variables
-    
-    allvars = variables(T)
-    missingvars = setdiff(allvars, given_vars)
-    if isnothing(remaining_variables_per_equation)
-        pv = participation_vector(T)
-        remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
-    end
-
-    #wrong
-    indices_equations_clique_order_remaining_variables = findall(rem_vars -> length(rem_vars) == clique_order, remaining_variables_per_equation)
-
-    clique_equations = Vector{Vector{Int}}()
-    clique_vars = Vector{Vector{Symbol}}()
-
-    for ind in indices_equations_clique_order_remaining_variables
-        rem_vars_i = remaining_variables_per_equation[ind]
-        equations_with_those_variables = findall(rv -> Set(rem_vars_i) == Set(rv), remaining_variables_per_equation)
-        if rem_vars_i ∉ clique_vars
-            push!(clique_equations, equations_with_those_variables) 
-            push!(clique_vars, rem_vars_i)
-        end
-    end
-    CliqueResult(clique_order, clique_equations, clique_vars)
-end
-
 #https://github.com/JuliaLang/julia/issues/43737
 findeach(testf::Function, A) = (first(p) for p in enumerate(A) if testf(last(p)))
 selectindices(v, indices) = Iterators.map(pair -> last(pair),
@@ -224,10 +185,21 @@ selectindices(v, indices) = Iterators.map(pair -> last(pair),
         enumerate(v))
 )
 
+# function isclique(T::Type{<:PhysicalProperties})
+    
+# end
+
 #return first found, reject wrong sizes
 #update logic for detecting overconstraint - think about this
+#N cliques de ordem M são um clique de ordem N*M
+#nem todas as variáveis precisam aparecer em todas as equações
+#a + b = 0
+#b + c = 0
+#a + c = 0
+#é um clique de ordem 3
 using Base.Iterators
-function find_clique2(
+using IterTools
+function find_clique(
     T::Type{<:PhysicalProperties}, 
     given_vars::AbstractVector{Symbol}, 
     clique_order::Int,
@@ -289,7 +261,6 @@ function test_find_clique_2_var(find_clique_function)
 end
 
 #clean
-#remove variables only where they are not overconstrained?
 #TooFewEquations = continuar
 #TooManyEquations = parar
 export overconstraint_validation
@@ -313,7 +284,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     #signal over/under-constrain!
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
-        clique_result = find_clique2(T, given_vars, clique_order, remaining_variables_per_equation)
+        clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
         if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
             over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
             
