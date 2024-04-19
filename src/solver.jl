@@ -256,9 +256,6 @@ function find_clique2(
 
     clique_candidate_subsets = selectindices(clique_candidate_subsets, nonempty_indices)
 
-    # unique_vars = collect(unique_vars)
-    # clique_candidate_subsets = collect(clique_candidate_subsets)
-    #check that no other subset has the same vars - remove this
     i = 0
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
         if i % 50 == 0
@@ -319,7 +316,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
         display(attempts_at_finding_solvable_var)
-        clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
+        clique_result = find_clique2(T, given_vars, clique_order, remaining_variables_per_equation)
         if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
             over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
             
