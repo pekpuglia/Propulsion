@@ -58,21 +58,17 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     for attempts_at_finding_solvable_var in 1:max_clique_order
         clique_result = find_clique(T, keys(known_data) |> collect, clique_order, remaining_variables_per_equation)
         
-        found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
-        found_clique_equations = clique_result.clique_equations[found_clique_indices]
-        found_clique_variables = clique_result.clique_vars[found_clique_indices]
-        
-        for (var_list, eq_list) in zip(found_clique_variables, found_clique_equations)
+        if clique_result.diagnostic == CliqueFound
             #solve for var list
-            residue_index = eq_list
-            vars_to_solve_for = var_list
+            residue_index = clique_result.clique_equations
+            vars_to_solve_for = clique_result.clique_vars
             #i have known_data
             #guess for missing vars which won't be solved this iteration
             other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
             other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
             
             residue_function = (values, p) -> residues(T(Dict(
-                Dict(var => value for (var, value) in zip(var_list, values))..., 
+                Dict(var => value for (var, value) in zip(vars_to_solve_for, values))..., 
                 Dict(other_var => other_value 
                     for (other_var, other_value) in zip(
                                                 other_missing_vars, 
@@ -86,7 +82,7 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
                 AutoForwardDiff()
             )
             #missing: initial guess for variables to solve now
-            initial_guess = getindex.(Ref(initial_guesses_dict), var_list)
+            initial_guess = getindex.(Ref(initial_guesses_dict), vars_to_solve_for)
             opt_problem = OptimizationProblem(
                 opt_function, initial_guess,
                 lb = √eps() * ones(size(initial_guess)),
@@ -97,20 +93,20 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
             #updating loop variables
             known_data = Dict(
                 known_data...,
-                [var => val for (var, val) in zip(var_list, sol.u)]...
+                [var => val for (var, val) in zip(vars_to_solve_for, sol.u)]...
             )
             
-            missingvars = setdiff(missingvars, var_list)
+            missingvars = setdiff(missingvars, vars_to_solve_for)
 
             remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
         end
         
         #try higher order cliques
-        if clique_order < max_clique_order && isempty(found_clique_equations)
+        if clique_order < max_clique_order && clique_result.diagnostic == NoCliqueFound
             clique_order += 1
         end
         #try again from the simple equations
-        if clique_order > 1 && !isempty(found_clique_equations)
+        if clique_order > 1 && clique_result.diagnostic == CliqueFound
             clique_order = 1
         end
     end
@@ -140,33 +136,23 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_init
 end
 ##
 #change to single clique repr
-@enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations
+@enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations NoCliqueFound
 struct CliqueResult
     expected_clique_order::Int
-    clique_equations::Vector{Vector{Int}}
-    clique_vars::Vector{Vector{Symbol}}
-    diagnostic::Vector{CliqueDiagnostic}
+    clique_equations::Vector{Int}
+    clique_vars::Vector{Symbol}
+    diagnostic::CliqueDiagnostic
     #assumes all elements have the same length
     function CliqueResult(expected_clique_order, clique_equations, clique_vars)
-        diagnostic = [
-            if length(vars) > length(eqs)
+        diagnostic = if length(clique_vars) > length(clique_equations)
                 TooFewEquations
-            elseif length(vars) == length(eqs) == expected_clique_order
+            elseif length(clique_vars) == length(clique_equations) == expected_clique_order
                 CliqueFound
-            elseif length(vars) < length(eqs)
+            elseif length(clique_vars) == length(clique_equations) == 0
+                NoCliqueFound
+            elseif length(clique_vars) < length(clique_equations)
                 TooManyEquations
             end
-            for (vars, eqs) in zip(clique_vars, clique_equations)
-        ]
-
-        #if found cliques, filter for them
-        #otherwise return the full list of not found cliques
-        if any(diagnostic .== CliqueFound)
-            indices = findall(diagnostic .== CliqueFound)
-            clique_equations = clique_equations[indices]
-            clique_vars = clique_vars[indices]
-            diagnostic = diagnostic[indices]
-        end
 
         new(
             expected_clique_order,
@@ -185,9 +171,6 @@ selectindices(v, indices) = Iterators.map(pair -> last(pair),
         enumerate(v))
 )
 
-# function isclique(T::Type{<:PhysicalProperties})
-    
-# end
 
 #return first found, reject wrong sizes
 #update logic for detecting overconstraint - think about this
@@ -219,8 +202,8 @@ function find_clique(
     unique_vars = Iterators.map(eq_subset -> unique(
         cat(remaining_variables_per_equation[eq_subset]..., dims=1)), clique_candidate_subsets)
     
-    clique_equations = Vector{Vector{Int}}(undef, 1)
-    clique_vars = Vector{Vector{Symbol}}(undef, 1)
+    clique_equations = []
+    clique_vars = []
     
     nonempty_indices = findeach(x -> !isempty(x), unique_vars)
     unique_vars = selectindices(unique_vars, nonempty_indices)
@@ -229,15 +212,15 @@ function find_clique(
 
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
         
-        clique_equations[1] = equation_subset
-        clique_vars[1] = unique_var
+        clique_equations = equation_subset
+        clique_vars = unique_var
 
         #usar equation subset?
         if length(unique_var) == clique_order
             #check that there is no other subset with the same unique variables
             #in this case, include the other equations as well
             subsets_with_only_these_variables = selectindices(clique_candidate_subsets, findeach(==(unique_var), unique_vars))
-            clique_equations[1] = cat(subsets_with_only_these_variables..., dims=1)
+            clique_equations = cat(subsets_with_only_these_variables..., dims=1)
             break
         end
     end
@@ -246,21 +229,12 @@ function find_clique(
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
-function test_find_clique_1_var(find_clique_function)
-    clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
-    any(clique_res.clique_equations .∈ Ref([[1], [2], [3]])) &&
-    any(clique_res.clique_vars .∈ Ref([[:T], [:R], [:rho]])) &&
-    any(clique_res.diagnostic .== CliqueFound)
-end
 
-function test_find_clique_2_var(find_clique_function)
-    clique_res = find_clique_function(CalorificProperties, [:P, :R, :gamma], 2)
-    i = findfirst(==(CliqueFound), clique_res.diagnostic)
-    clique_res.clique_equations[i] == [4, 5] &&
-    Set(clique_res.clique_vars[i]) == Set([:cp, :cv])
-end
+
+
 
 #clean
+#make iterator on cliques
 #TooFewEquations = continuar
 #TooManyEquations = parar
 export overconstraint_validation
@@ -285,32 +259,24 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
         clique_result = find_clique(T, given_vars, clique_order, remaining_variables_per_equation)
-        if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
-            over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
-            
-            over_constrained_equation_indices = cat(clique_result.clique_equations[over_constrained_indices]..., dims=1)
-            over_constrained_variables = cat(clique_result.clique_vars[over_constrained_indices]..., dims=1)
-            
-            over_constrained_equations = sym_residues[over_constrained_equation_indices]
+        if clique_result.diagnostic == TooManyEquations
+            over_constrained_variables = clique_result.clique_vars
+            over_constrained_equations = sym_residues[clique_result.clique_equations]
 
             error("variables $over_constrained_variables are overconstrained\nby the following equations: $over_constrained_equations")
         end
-        found_clique_indices = findall(==(CliqueFound), clique_result.diagnostic)
-        found_clique_equations = clique_result.clique_equations[found_clique_indices]
-        found_clique_variables = clique_result.clique_vars[found_clique_indices]
-        for var_list in found_clique_variables
-            #
+        if clique_result.diagnostic == CliqueFound
             remaining_variables_per_equation = [
-                filter(∉(var_list), rem_vars)
+                filter(∉(clique_result.clique_vars), rem_vars)
                 for rem_vars in remaining_variables_per_equation
             ]
         end
         #try higher order cliques
-        if clique_order < max_clique_order && isempty(found_clique_equations)
+        if clique_order < max_clique_order && clique_result.diagnostic == NoCliqueFound
             clique_order += 1
         end
         #try again from the simple equations
-        if clique_order > 1 && !isempty(found_clique_equations)
+        if clique_order > 1 && clique_result.diagnostic == CliqueFound
             clique_order = 1
         end
     end

@@ -24,6 +24,12 @@ end
 
 @test_throws ErrorException test_reject_overconstrained_system()
 
+function test_find_cp_cv()
+    Propulsion.find_clique(Quasi1dimflowProperties, [:P, :T, :MM, :gamma, :Astar, :A, :z, :R, :rho, :a, :M, :v, :T0, :P0, :rho0, :a0, :mdot], 1)
+end
+
+@test test_find_cp_cv().diagnostic == Propulsion.CliqueFound
+
 function test_use_initial_value()
     Quasi1dimflowProperties(
         P=1, 
