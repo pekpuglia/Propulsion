@@ -218,10 +218,10 @@ end
 
 #https://github.com/JuliaLang/julia/issues/43737
 findeach(testf::Function, A) = (first(p) for p in enumerate(A) if testf(last(p)))
-selectindices(v, indices) = Iterators.map(pair -> last(first(pair)),
+selectindices(v, indices) = Iterators.map(pair -> last(pair),
     Iterators.filter(
-        vars_ind_pair -> first(first(vars_ind_pair)) in last(vars_ind_pair), 
-        zip(enumerate(v), indices))
+        i_vars -> first(i_vars) in indices, 
+        enumerate(v))
 )
 
 #return first found, reject wrong sizes
