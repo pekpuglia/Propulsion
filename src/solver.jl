@@ -247,7 +247,6 @@ function find_clique2(
     unique_vars = Iterators.map(eq_subset -> unique(
         cat(remaining_variables_per_equation[eq_subset]..., dims=1)), clique_candidate_subsets)
     
-    display("unique vars found")
     clique_equations = Vector{Vector{Int}}(undef, 1)
     clique_vars = Vector{Vector{Symbol}}(undef, 1)
     
@@ -256,28 +255,25 @@ function find_clique2(
 
     clique_candidate_subsets = selectindices(clique_candidate_subsets, nonempty_indices)
 
-    i = 0
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
-        if i % 50 == 0
-            display(i)
-            display(length(unique_var))
-        end
-        i += 1
         
         clique_equations[1] = equation_subset
         clique_vars[1] = unique_var
 
         #usar equation subset?
         if length(unique_var) == clique_order
-            display("found clique: $unique_var in eqs: $equation_subset")
+            #check that there is no other subset with the same unique variables
+            #in this case, include the other equations as well
+            subsets_with_only_these_variables = selectindices(clique_candidate_subsets, findeach(==(unique_var), unique_vars))
+            clique_equations[1] = cat(subsets_with_only_these_variables..., dims=1)
             break
         end
     end
     
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
-#find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z is overconstrained
-#find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2)
+#find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
+#find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
 function test_find_clique_1_var(find_clique_function)
     clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
     any(clique_res.clique_equations .∈ Ref([[1], [2], [3]])) &&
@@ -293,6 +289,7 @@ function test_find_clique_2_var(find_clique_function)
 end
 
 #clean
+#remove variables only where they are not overconstrained?
 #TooFewEquations = continuar
 #TooManyEquations = parar
 export overconstraint_validation
@@ -303,6 +300,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     missingvars = setdiff(allvars, given_vars)
 
     remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
+    #try and remove this?
     if any(isempty.(remaining_variables_per_equation))
         over_constrained_index = isempty.(remaining_variables_per_equation)
         over_constrained_equation_variables = participation_vector(T)[over_constrained_index][1]
@@ -315,7 +313,6 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
     #signal over/under-constrain!
     clique_order = 1
     for attempts_at_finding_solvable_var in 1:max_clique_order
-        display(attempts_at_finding_solvable_var)
         clique_result = find_clique2(T, given_vars, clique_order, remaining_variables_per_equation)
         if !isempty(clique_result.diagnostic) && any(clique_result.diagnostic .== TooManyEquations)
             over_constrained_indices = findall(==(TooManyEquations), clique_result.diagnostic)
@@ -331,6 +328,7 @@ function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::Ab
         found_clique_equations = clique_result.clique_equations[found_clique_indices]
         found_clique_variables = clique_result.clique_vars[found_clique_indices]
         for var_list in found_clique_variables
+            #
             remaining_variables_per_equation = [
                 filter(∉(var_list), rem_vars)
                 for rem_vars in remaining_variables_per_equation
