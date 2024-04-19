@@ -10,7 +10,6 @@ module Propulsion
 #discover when initial guess for M is required
 #wrap and use supersonic::Bool?
 
-#unit refactor!
 
 #make "default values" for initial_guesses
 
@@ -18,6 +17,11 @@ module Propulsion
 
 #pipe flow
 #add de Laval Nozzle - multiple sections
+
+#unit refactor!
+#refactor find_clique
+#add ReTest
+#add more find_clique tests
 
 include("physical_properties_base.jl")
 include("physical_properties.jl")
