@@ -18,7 +18,7 @@ module Propulsion
 #pipe flow
 #add de Laval Nozzle - multiple sections
 
-#unit refactor!
+#unit and interval refactor!
 #refactor find_clique
 #add ReTest
 #add more find_clique tests
