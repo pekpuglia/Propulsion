@@ -241,47 +241,39 @@ function find_clique2(
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
 
-    clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
+    clique_candidate_subsets = subsets(
+        findall(!isempty, remaining_variables_per_equation), clique_order)
 
     unique_vars = Iterators.map(eq_subset -> unique(
         cat(remaining_variables_per_equation[eq_subset]..., dims=1)), clique_candidate_subsets)
     
     display("unique vars found")
-    clique_equations = Vector{Vector{Int}}()
-    clique_vars = Vector{Vector{Symbol}}()
+    clique_equations = Vector{Vector{Int}}(undef, 1)
+    clique_vars = Vector{Vector{Symbol}}(undef, 1)
     
     nonempty_indices = findeach(x -> !isempty(x), unique_vars)
     unique_vars = selectindices(unique_vars, nonempty_indices)
 
     clique_candidate_subsets = selectindices(clique_candidate_subsets, nonempty_indices)
 
-    unique_vars = collect(unique_vars)
-    clique_candidate_subsets = collect(clique_candidate_subsets)
+    # unique_vars = collect(unique_vars)
+    # clique_candidate_subsets = collect(clique_candidate_subsets)
     #check that no other subset has the same vars - remove this
     i = 0
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
         if i % 50 == 0
             display(i)
+            display(length(unique_var))
         end
         i += 1
+        
+        clique_equations[1] = equation_subset
+        clique_vars[1] = unique_var
+
         #usar equation subset?
-        if unique_var ∉ clique_vars
-            subset_indices_with_these_variables = findall(other_unique_variable_list -> 
-                Set(other_unique_variable_list) == Set(unique_var), 
-                unique_vars
-            )
-
-            new_found_clique_equations = cat(
-                (clique_candidate_subsets)[subset_indices_with_these_variables]...,
-                dims=1) |> unique
-
-            filter!(eq -> !isempty(remaining_variables_per_equation[eq]), new_found_clique_equations)
-
-            if length(new_found_clique_equations) == clique_order || length(unique_var) == clique_order
-                display("found clique: $unique_var")
-                push!(clique_equations, new_found_clique_equations)
-                push!(clique_vars, unique_var)
-            end
+        if length(unique_var) == clique_order
+            display("found clique: $unique_var in eqs: $equation_subset")
+            break
         end
     end
     
@@ -291,9 +283,9 @@ end
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2)
 function test_find_clique_1_var(find_clique_function)
     clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
-    clique_res.clique_equations == [[1], [2], [3]] &&
-    clique_res.clique_vars == [[:T], [:R], [:rho]] &&
-    all(clique_res.diagnostic .== CliqueFound)
+    any(clique_res.clique_equations .∈ Ref([[1], [2], [3]])) &&
+    any(clique_res.clique_vars .∈ Ref([[:T], [:R], [:rho]])) &&
+    any(clique_res.diagnostic .== CliqueFound)
 end
 
 function test_find_clique_2_var(find_clique_function)
@@ -304,6 +296,8 @@ function test_find_clique_2_var(find_clique_function)
 end
 
 #clean
+#TooFewEquations = continuar
+#TooManyEquations = parar
 export overconstraint_validation
 function overconstraint_validation(T::Type{<:PhysicalProperties}, given_vars::AbstractVector{Symbol})
     pv = participation_vector(T)
