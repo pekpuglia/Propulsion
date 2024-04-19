@@ -185,17 +185,17 @@ end
 #testing it didn't error
 @test test_residue_unit_coherence() isa Vector
 
-function test_find_clique_1_var()
-    clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
+function test_find_clique_1_var(find_clique_function)
+    clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
     any(clique_res.clique_equations .∈ [[1], [2], [3]]) &&
     any(clique_res.clique_vars .∈ [[:T], [:R], [:rho]]) &&
-    clique_res.diagnostic == Propulsion.CliqueFound
+    clique_res.diagnostic == CliqueFound
 end
 
 @test test_find_clique_1_var()
 
-function test_find_clique_2_var()
-    clique_res = find_clique(CalorificProperties, [:P, :R, :gamma], 2)
+function test_find_clique_2_var(find_clique_function)
+    clique_res = find_clique_function(CalorificProperties, [:P, :R, :gamma], 2)
     clique_res.clique_equations == [4, 5] &&
     Set(clique_res.clique_vars) == Set([:cp, :cv])
 end
