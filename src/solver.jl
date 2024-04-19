@@ -277,15 +277,15 @@ function find_clique2(
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - can't find correct cp, cv clique
-function test_find_clique_1_var()
-    clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
+function test_find_clique_1_var(find_clique_function)
+    clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
     clique_res.clique_equations == [[1], [2], [3]] &&
     clique_res.clique_vars == [[:T], [:R], [:rho]] &&
     all(clique_res.diagnostic .== CliqueFound)
 end
 
-function test_find_clique_2_var()
-    clique_res = find_clique(CalorificProperties, [:P, :R, :gamma], 2)
+function test_find_clique_2_var(find_clique_function)
+    clique_res = find_clique_function(CalorificProperties, [:P, :R, :gamma], 2)
     i = findfirst(==(CliqueFound), clique_res.diagnostic)
     clique_res.clique_equations[i] == [4, 5] &&
     Set(clique_res.clique_vars[i]) == Set([:cp, :cv])
