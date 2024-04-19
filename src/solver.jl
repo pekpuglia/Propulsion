@@ -216,36 +216,48 @@ function find_clique(
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
 
+#https://github.com/JuliaLang/julia/issues/43737
+findeach(testf::Function, A) = (first(p) for p in enumerate(A) if testf(last(p)))
+selectindices(v, indices) = Iterators.map(pair -> last(first(pair)),
+    Iterators.filter(
+        vars_ind_pair -> first(first(vars_ind_pair)) in last(vars_ind_pair), 
+        zip(enumerate(v), indices))
+)
+
 #return first found, reject wrong sizes
 #update logic for detecting overconstraint - think about this
+using Base.Iterators
 function find_clique2(
     T::Type{<:PhysicalProperties}, 
     given_vars::AbstractVector{Symbol}, 
     clique_order::Int,
     remaining_variables_per_equation=nothing
-) :: CliqueResult #list of sets of equations with the same remaining variables
+) #list of sets of equations with the same remaining variables
+
     allvars = variables(T)
     missingvars = setdiff(allvars, given_vars)
     if isnothing(remaining_variables_per_equation)
         pv = participation_vector(T)
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
+
     clique_candidate_subsets = subsets(1:lastindex(remaining_variables_per_equation), clique_order)
 
-    unique_vars = []
-    for equation_subset = clique_candidate_subsets
-        #check that we have clique order distinct variables
-        push!(unique_vars, unique(
-            cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
-    end
+    unique_vars = Iterators.map(eq_subset -> unique(
+        cat(remaining_variables_per_equation[eq_subset]..., dims=1)), clique_candidate_subsets)
+    
     display("unique vars found")
     clique_equations = Vector{Vector{Int}}()
     clique_vars = Vector{Vector{Symbol}}()
     
-    nonempty_indices = findall(x -> !isempty(x), unique_vars)
-    unique_vars = unique_vars[nonempty_indices]
-    clique_candidate_subsets = (clique_candidate_subsets |> collect)[nonempty_indices]
-    #check that no other subset has the same vars
+    nonempty_indices = findeach(x -> !isempty(x), unique_vars)
+    unique_vars = selectindices(unique_vars, nonempty_indices)
+
+    clique_candidate_subsets = selectindices(clique_candidate_subsets, nonempty_indices)
+
+    unique_vars = collect(unique_vars)
+    clique_candidate_subsets = collect(clique_candidate_subsets)
+    #check that no other subset has the same vars - remove this
     i = 0
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
         if i % 50 == 0
@@ -253,7 +265,7 @@ function find_clique2(
         end
         i += 1
         #usar equation subset?
-        if unique_var ∉ clique_vars && !isempty(unique_var)
+        if unique_var ∉ clique_vars
             subset_indices_with_these_variables = findall(other_unique_variable_list -> 
                 Set(other_unique_variable_list) == Set(unique_var), 
                 unique_vars
@@ -275,8 +287,8 @@ function find_clique2(
     
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
-#find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z
-#find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - can't find correct cp, cv clique
+#find_clique(MassProperties, [:P, :MM, :T, :rho, :R], 1) - should return :z is overconstrained
+#find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2)
 function test_find_clique_1_var(find_clique_function)
     clique_res = find_clique_function(MassProperties, [:P, :z, :MM], 1)
     clique_res.clique_equations == [[1], [2], [3]] &&
