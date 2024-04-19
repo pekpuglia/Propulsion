@@ -216,6 +216,8 @@ function find_clique(
     CliqueResult(clique_order, clique_equations, clique_vars)
 end
 
+#return first found, reject wrong sizes
+#update logic for detecting overconstraint - think about this
 function find_clique2(
     T::Type{<:PhysicalProperties}, 
     given_vars::AbstractVector{Symbol}, 
@@ -236,7 +238,7 @@ function find_clique2(
         push!(unique_vars, unique(
             cat(remaining_variables_per_equation[equation_subset]..., dims=1)))
     end
-
+    display("unique vars found")
     clique_equations = Vector{Vector{Int}}()
     clique_vars = Vector{Vector{Symbol}}()
     
@@ -244,7 +246,12 @@ function find_clique2(
     unique_vars = unique_vars[nonempty_indices]
     clique_candidate_subsets = (clique_candidate_subsets |> collect)[nonempty_indices]
     #check that no other subset has the same vars
+    i = 0
     for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
+        if i % 50 == 0
+            display(i)
+        end
+        i += 1
         #usar equation subset?
         if unique_var ∉ clique_vars && !isempty(unique_var)
             subset_indices_with_these_variables = findall(other_unique_variable_list -> 
@@ -259,6 +266,7 @@ function find_clique2(
             filter!(eq -> !isempty(remaining_variables_per_equation[eq]), new_found_clique_equations)
 
             if length(new_found_clique_equations) == clique_order || length(unique_var) == clique_order
+                display("found clique: $unique_var")
                 push!(clique_equations, new_found_clique_equations)
                 push!(clique_vars, unique_var)
             end
