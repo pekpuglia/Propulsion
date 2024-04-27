@@ -283,6 +283,26 @@ let
     @test isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
 end
 
+function test_example_10_4()
+    Quasi1dimflowProperties(
+        P0=30u"atm",
+        T0=3500u"K",
+        Astar=0.4u"m^2",
+        A=0.4u"m^2",
+        gamma=1.22,
+        R = 520u"J/kg/K"
+    )
+end
+
+@testset "example 10.4" begin
+    sol = test_example_10_4()
+    @test isapprox(sol.rho0, 1.665u"kg/m^3", atol=10u"g/m^3")
+    @test isapprox(sol.rho, 1.036u"kg/m^3", atol=10u"g/m^3")
+    @test isapprox(sol.T, 3154u"K", atol=1u"K")
+    @test isapprox(sol.a, 1415u"m/s", atol=1u"m/s")
+    @test isapprox(sol.mdot, 586.4u"kg/s", atol=2u"kg/s")
+end
+
 function test_example_8_11()
     nsp = NormalShockProperties(
         v_1 = 680u"m/s",
