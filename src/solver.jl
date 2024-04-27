@@ -101,17 +101,46 @@ end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
 
-function clique_iterator(cr::CliqueResult)
-    
-end
-
-
 using Optimization, OptimizationOptimJL
+function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesses_dict)
+    residue_index = cr.clique_equations
+    vars_to_solve_for = cr.clique_vars
+    #i have known_data
+    #guess for missing vars which won't be solved this iteration
+    other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
+    other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
+    
+    residue_function = (values, p) -> residues(T(Dict(
+        Dict(var => value for (var, value) in zip(vars_to_solve_for, values))..., 
+        Dict(other_var => other_value 
+            for (other_var, other_value) in zip(
+                                        other_missing_vars, 
+                                        other_missing_values
+        ))...,
+        known_data...
+    )))[residue_index]
+    
+    opt_function = OptimizationFunction(
+        (values, p) -> residue_function(values, p) .^ 2 |> sum,
+        AutoForwardDiff()
+    )
+    #missing: initial guess for variables to solve now
+    initial_guess = getindex.(Ref(initial_guesses_dict), vars_to_solve_for)
+    opt_problem = OptimizationProblem(
+        opt_function, initial_guess,
+        lb = √eps() * ones(size(initial_guess)),
+        ub = fill(Inf, size(initial_guess)))
+    sol = solve(opt_problem, Optim.IPNewton())
+    @assert Bool(sol.retcode)
 
+    #return new known_data and setdiff
+    Dict(
+        known_data...,
+        [var => val for (var, val) in zip(vars_to_solve_for, sol.u)]...
+    ), setdiff(missingvars, vars_to_solve_for)
+end
 #initial_guesses must be missingvars
-"""
-opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
-"""
+#melhorar
 function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector{Symbol}}, input_initial_guesses::Dict=Dict())
     pv = participation_vector(T)
     allvars = variables(T)
@@ -157,43 +186,7 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
         if clique_result.diagnostic == CliqueFound
             #solve for var list
             if numerically_solve
-                residue_index = clique_result.clique_equations
-                vars_to_solve_for = clique_result.clique_vars
-                #i have known_data
-                #guess for missing vars which won't be solved this iteration
-                other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
-                other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
-                
-                residue_function = (values, p) -> residues(T(Dict(
-                    Dict(var => value for (var, value) in zip(vars_to_solve_for, values))..., 
-                    Dict(other_var => other_value 
-                        for (other_var, other_value) in zip(
-                                                    other_missing_vars, 
-                                                    other_missing_values
-                    ))...,
-                    known_data...
-                )))[residue_index]
-                
-                opt_function = OptimizationFunction(
-                    (values, p) -> residue_function(values, p) .^ 2 |> sum,
-                    AutoForwardDiff()
-                )
-                #missing: initial guess for variables to solve now
-                initial_guess = getindex.(Ref(initial_guesses_dict), vars_to_solve_for)
-                opt_problem = OptimizationProblem(
-                    opt_function, initial_guess,
-                    lb = √eps() * ones(size(initial_guess)),
-                    ub = fill(Inf, size(initial_guess)))
-                sol = solve(opt_problem, Optim.IPNewton())
-                @assert Bool(sol.retcode)
-
-                #updating loop variables
-                known_data = Dict(
-                    known_data...,
-                    [var => val for (var, val) in zip(vars_to_solve_for, sol.u)]...
-                )
-                
-                missingvars = setdiff(missingvars, vars_to_solve_for)
+                known_data, missingvars = solve_step(T, clique_result, known_data, missingvars, initial_guesses_dict)
             end
             remaining_variables_per_equation = remaining_variables_per_equation = [
                 filter(∉(clique_result.clique_vars), rem_vars)
