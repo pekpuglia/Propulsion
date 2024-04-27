@@ -5,6 +5,7 @@ module Propulsion
 #use kg intead of g (speed scaling)
 
 #prioritize using intensive properties?
+#make all equations unitless
 
 #sub/supersonic choice - initial guesses depend on the variables
 #discover when initial guess for M is required
