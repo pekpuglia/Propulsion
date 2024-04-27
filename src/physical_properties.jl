@@ -226,17 +226,20 @@ struct Quasi1dimflowProperties <: PhysicalProperties
     end
 end
 
+const DEF_AREA_UNIT = u"m^2"
+const DEF_MASS_FLOW_UNIT = DEF_AREA_UNIT * DEF_DENSITY_UNIT * DEF_SPEED_UNIT
+
 units(::Type{Quasi1dimflowProperties}) = Dict(
-    :mdot => u"kg/s",
-    :A => u"m^2",
-    :Astar => u"m^2",
+    :mdot => DEF_MASS_FLOW_UNIT,
+    :A => DEF_AREA_UNIT,
+    :Astar => DEF_AREA_UNIT,
     units(FlowProperties)...
 )
 
 function residues(qp::Quasi1dimflowProperties)
     [
         residues(qp.fp)
-        qp.mdot - qp.A * qp.fp.v * qp.fp.cal_prop.mp.rho
+        qp.A * qp.fp.v * qp.fp.cal_prop.mp.rho / qp.mdot - 1
         #p 682 anderson
         qp.A * qp.fp.M -
             qp.Astar * (
