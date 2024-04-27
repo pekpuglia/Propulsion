@@ -42,28 +42,30 @@ function test_mp_correct_input()
     Propulsion.internal_solver(MassProperties, right_given_vars_mp)
 end
 
-@test test_mp_correct_input()
 
 function test_mp_wrong_input()
     wrong_given_vars_mp = [:P, :MM, :T, :rho]
     Propulsion.internal_solver(MassProperties, wrong_given_vars_mp)
 end
 
-@test_throws ErrorException test_mp_wrong_input()
 
 function test_fp_right_input()
     right_given_vars_fp = [:P, :MM, :rho, :M, :gamma]
     Propulsion.internal_solver(FlowProperties, right_given_vars_fp)
 end
 
-@test test_fp_right_input()
 
 function test_fp_wrong_input()
     wrong_given_vars_fp = [:P, :MM, :rho, :M, :T]
     Propulsion.internal_solver(FlowProperties, wrong_given_vars_fp)
 end
 
-@test_throws ErrorException test_fp_wrong_input()
+@testset "overconstraint validation" begin
+    @test test_mp_correct_input()
+    @test_throws ErrorException test_mp_wrong_input()
+    @test test_fp_right_input()
+    @test_throws ErrorException test_fp_wrong_input()
+end
 
 ############################################################################
 #numerical tests found through bugs
@@ -217,7 +219,7 @@ function test_flow_properties()
     solution, solution2
 end
 
-let
+@testset "examples 7.6 and 7.7" begin
     solution, solution2 = test_flow_properties()
     @test isapprox(solution.T0, 817.8u"K", atol=1e-1u"K")
     @test isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm")
@@ -238,7 +240,8 @@ function test_example_10_1()
     )
 end
 
-let sol = test_example_10_1()
+@testset "example 10.1" begin 
+    sol = test_example_10_1()
     @test isapprox(sol.M, 3.95, atol=0.01)
     @test isapprox(sol.P, 0.035u"atm", atol=1e-3u"atm")
     @test isapprox(sol.T, 145.6u"Ra", atol=0.1u"Ra")
@@ -269,7 +272,7 @@ function test_example_10_2()
     nfp_supersonic, nfp_subsonic
 end
 
-let
+@testset "example 10.2" begin
     nfp_supersonic, nfp_subsonic = test_example_10_2()
     
     @test isapprox(nfp_supersonic[1].P, 0.528u"atm", atol=1e-3u"atm")
@@ -313,7 +316,7 @@ function test_example_8_11()
     )
 end
 
-let 
+@testset "example 8.11" begin 
     nsp = test_example_8_11()
 
     @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
