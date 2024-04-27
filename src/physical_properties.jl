@@ -28,7 +28,7 @@ r_molar(::Number) = Rmolar
 r_molar(::Real) = ustrip(DEF_MOLARCALORCAP_UNIT, Rmolar)
 
 function residues(tp::ThermodynamicProperties)
-    [tp.P - tp.z*tp.T*r_molar(tp.P)]
+    [tp.z*tp.T*r_molar(tp.P) / tp.P - 1]
 end
 ##
 export MassProperties
@@ -62,8 +62,8 @@ units(::Type{MassProperties}) = Dict(
 function residues(mp::MassProperties)
     [
         residues(mp.tp)
-        mp.R * mp.MM - r_molar(mp.MM)
-        mp.rho - mp.MM * mp.tp.z
+        mp.R * mp.MM / r_molar(mp.MM) - 1
+        mp.MM * mp.tp.z / mp.rho - 1
     ]
 end
 ##

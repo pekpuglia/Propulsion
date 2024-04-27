@@ -202,6 +202,11 @@ end
 
 #############################################################################
 # correctness
+function test_air_molar_mass()
+    MassProperties(P = 1u"bar", T = 300u"K", R = 287u"J/kg/K")
+end
+
+@test isapprox(test_air_molar_mass().MM, 28.9u"g/mol", atol=0.1u"g/mol")
 
 #anderson
 function test_flow_properties()
