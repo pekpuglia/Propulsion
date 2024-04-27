@@ -1,28 +1,22 @@
 module Propulsion
 #todo
 
-#https://github.com/ksil/LFPSQP.jl
-#use kg intead of g (speed scaling)
-
-#prioritize using intensive properties?
-#make all equations unitless
-
-#sub/supersonic choice - initial guesses depend on the variables
-#discover when initial guess for M is required
-#wrap and use supersonic::Bool?
-
-
-#make "default values" for initial_guesses
-
-#actually use this - do As/Ac x Pt/Ps plot
+#make "default values" for initial_guesses?
+#unit (use better units) and interval refactor!
 
 #pipe flow
 #add de Laval Nozzle - multiple sections
+#actually use this - do As/Ac x Pt/Ps plot
+#sub/supersonic choice - initial guesses depend on the variables
+#discover when initial guess for M is required
+#wrap and use supersonic::Bool?
+#
 
-#unit and interval refactor!
-#refactor find_clique
 #add ReTest
+
+#refactor find_clique
 #add more find_clique tests
+#inject clique guess
 
 include("physical_properties_base.jl")
 include("physical_properties.jl")
