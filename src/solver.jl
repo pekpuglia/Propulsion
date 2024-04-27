@@ -16,28 +16,11 @@ end
 
 using Optimization, OptimizationOptimJL, NonlinearSolve
 
-export DEFAULT_OPT_PROB_GENERATOR
-DEFAULT_OPT_PROB_GENERATOR = (f_value_p, u0, lb, ub) -> begin
-    opt_func = OptimizationFunction(
-        (values, p) -> f_value_p(values, p) .^2 |> sum,
-        AutoForwardDiff()
-    )
-
-    OptimizationProblem(
-        opt_func, u0, 
-        iterations = 10000,
-        lb = lb, ub = ub)
-end
-
 #initial_guesses must be missingvars
 """
 opt_prob_generator(residue_value_p, initial_guesses_vec) -> prob
 """
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict, 
-        opt_prob_generator::Union{Function, Nothing} = nothing, 
-        solver = nothing, 
-        return_sol=false
-    )
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initial_guesses::Dict)
     pv = participation_vector(T)
     allvars = variables(T)
     given_vars = keys(input_data) |> collect
@@ -113,26 +96,16 @@ function internal_solver(T::Type, input_data::Dict{Symbol, <:Real}, input_initia
     T(known_data)
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict,
-        opt_prob_generator = nothing, 
-        solver = nothing,
-        return_sol=false
-    )
+function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict)
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
 
     unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_initial_guesses)
 
-    unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses, opt_prob_generator, solver, return_sol)
-    
-    return_sol = something(return_sol, false)
-    
-    if return_sol
-        add_units(unitless_solution[1], internal_units), unitless_solution[2]
-    else
-        add_units(unitless_solution, internal_units)
-    end
+    unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses)
+     
+    add_units(unitless_solution, internal_units)
 end
 ##
 #change to single clique repr
@@ -291,10 +264,6 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
     kwargs = Dict(kwargs)
 
-    opt_prob_gen = pop!(kwargs, :opt_prob_gen, nothing)
-    solver = pop!(kwargs, :solver, nothing)
-    return_sol = pop!(kwargs, :return_sol, nothing)
-
     initial_keys = filter(s -> startswith(string(s), "initial_"), keys(kwargs))
 
     data_kwargs = filter(p -> p.first ∉ initial_keys, kwargs)
@@ -322,5 +291,5 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     overconstraint_validation(T, keys(kwargs) |> collect)
 
 
-    internal_solver(T, data_kwargs, initial_kwargs, opt_prob_gen, solver, return_sol)
+    internal_solver(T, data_kwargs, initial_kwargs)
 end
