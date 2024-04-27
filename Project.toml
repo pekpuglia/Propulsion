@@ -6,7 +6,6 @@ version = "0.4.2"
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
-NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
 OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
@@ -16,6 +15,3 @@ Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
-
-[compat]
-NonlinearSolve = "3.4.0"

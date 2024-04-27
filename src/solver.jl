@@ -106,7 +106,7 @@ function clique_iterator(cr::CliqueResult)
 end
 
 
-using Optimization, OptimizationOptimJL, NonlinearSolve
+using Optimization, OptimizationOptimJL
 
 #initial_guesses must be missingvars
 """
