@@ -39,28 +39,28 @@ end
 #constraint tests
 function test_mp_correct_input()
     right_given_vars_mp = [:P, :MM, :T]
-    overconstraint_validation(MassProperties, right_given_vars_mp)
+    Propulsion.internal_solver(MassProperties, right_given_vars_mp)
 end
 
 @test test_mp_correct_input()
 
 function test_mp_wrong_input()
     wrong_given_vars_mp = [:P, :MM, :T, :rho]
-    overconstraint_validation(MassProperties, wrong_given_vars_mp)
+    Propulsion.internal_solver(MassProperties, wrong_given_vars_mp)
 end
 
 @test_throws ErrorException test_mp_wrong_input()
 
 function test_fp_right_input()
     right_given_vars_fp = [:P, :MM, :rho, :M, :gamma]
-    overconstraint_validation(FlowProperties, right_given_vars_fp)
+    Propulsion.internal_solver(FlowProperties, right_given_vars_fp)
 end
 
 @test test_fp_right_input()
 
 function test_fp_wrong_input()
     wrong_given_vars_fp = [:P, :MM, :rho, :M, :T]
-    overconstraint_validation(FlowProperties, wrong_given_vars_fp)
+    Propulsion.internal_solver(FlowProperties, wrong_given_vars_fp)
 end
 
 @test_throws ErrorException test_fp_wrong_input()
