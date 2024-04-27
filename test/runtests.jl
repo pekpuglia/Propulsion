@@ -1,6 +1,4 @@
-include("../src/Propulsion.jl")
-
-using .Propulsion
+using Propulsion
 
 using Test, Unitful
 
