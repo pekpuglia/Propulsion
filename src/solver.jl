@@ -38,15 +38,17 @@ end
 #how many connected_subgraphs of size N are there?
 #we have V vertices, E edges
 #at most choose(V, N)
-# function subgraphs_connected_to_vertex(adj_list::Vector{Tuple{Symbol, Symbol}}, vertex::Symbol, size::Int)
-#     if size == 1
-#         return [vertex]
-#     else
-#         [
-#             [vertex, subgraphs_connected_to_vertex(adj_list_)]
-#         ]
-#     end
-# end
+export subgraphs_connected_to_vertex
+function subgraphs_connected_to_vertex(adj_list::Vector{Tuple{Symbol, Symbol}}, vertex::Symbol, size::Int)
+    if size == 1
+        return [vertex]
+    else
+        [
+            [vertex, subgraphs_connected_to_vertex(filter(pair -> vertex ∉ pair, adj_list), neighbor, size-1)...]
+            for neighbor in neighbors(vertex, adj_list)
+        ]
+    end
+end
 
 #change to single clique repr
 @enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations NoCliqueFound
