@@ -103,6 +103,8 @@ selectindices(v, indices) = Iterators.map(pair -> last(pair),
         enumerate(v))
 )
 
+#inverter participation vector?
+#buscar subgrafos com equações como nós?
 
 #return first found, reject wrong sizes
 #N cliques de ordem M são um clique de ordem N*M
