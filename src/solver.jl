@@ -24,6 +24,30 @@ function adjacency_list(T::Type{<:PhysicalProperties})
     ]
 end
 
+function neighbors(vertex::Symbol, adj_list::Vector{Tuple{Symbol, Symbol}})
+    adj_list |>
+        filter(pair -> vertex ∈ pair) .|>
+        filter(!=(vertex)) .|>
+        first
+end
+
+# export connected_subgraphs
+# function connected_subgraphs(T::Type{<:PhysicalProperties}, size::Int)
+#     connected_subgraphs(adjacency_list(T), size)
+# end
+#how many connected_subgraphs of size N are there?
+#we have V vertices, E edges
+#at most choose(V, N)
+# function subgraphs_connected_to_vertex(adj_list::Vector{Tuple{Symbol, Symbol}}, vertex::Symbol, size::Int)
+#     if size == 1
+#         return [vertex]
+#     else
+#         [
+#             [vertex, subgraphs_connected_to_vertex(adj_list_)]
+#         ]
+#     end
+# end
+
 #change to single clique repr
 @enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations NoCliqueFound
 struct CliqueResult

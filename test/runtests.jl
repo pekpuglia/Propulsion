@@ -199,6 +199,8 @@ end
     (:MM, :rho)
 ]
 
+@test Set(Propulsion.neighbors(:MM, adjacency_list(MassProperties))) == Set([:z, :R, :rho])
+
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
     any(clique_res.clique_equations .∈ [[1], [2], [3]]) &&
