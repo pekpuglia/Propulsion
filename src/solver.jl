@@ -5,6 +5,23 @@ function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_data::Dict{S
         (var in keys(default_initial_guesses(T))) ? default_initial_guesses(T)[var] : default_value
     ) for var in variables(T))
 end
+export adjacency_list
+function adjacency_list(T::Type{<:PhysicalProperties})
+    pv = participation_vector(T)
+    Dict(
+        v => unique(
+            filter(
+                !=(v), 
+                vcat(
+                    pv[
+                        findall(eq_members -> v ∈ eq_members, pv)
+                    ]...
+                )
+            )
+        )
+        for v in variables(T)
+    )
+end
 
 #change to single clique repr
 @enum CliqueDiagnostic TooManyEquations CliqueFound TooFewEquations NoCliqueFound

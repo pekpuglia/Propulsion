@@ -185,6 +185,19 @@ end
 #testing it didn't error
 @test test_residue_unit_coherence() isa Vector
 
+function test_adjacency_list()
+    adjacency_list(MassProperties)
+end
+
+@test test_adjacency_list() == Dict(
+    :T   => [:P, :z],
+    :P   => [:T, :z],
+    :R   => [:MM],
+    :rho => [:MM, :z],
+    :MM  => [:R, :rho, :z],
+    :z   => [:P, :T, :rho, :MM],
+)
+
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
     any(clique_res.clique_equations .∈ [[1], [2], [3]]) &&
