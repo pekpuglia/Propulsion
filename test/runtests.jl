@@ -201,6 +201,17 @@ end
 
 @test Set(Propulsion.neighbors(:MM, adjacency_list(MassProperties))) == Set([:z, :R, :rho])
 
+function test_vertex_subgraphs()
+    subgraphs_connected_to_vertex(adjacency_list(MassProperties), :MM, 3)
+end
+
+@testset "vertex subgraphs" begin
+    subgraphs = test_vertex_subgraphs() .|> Set |> Set
+    @test Set([:P, :MM, :z]) in subgraphs
+    @test Set([:rho, :MM, :z]) in subgraphs
+    @test Set([:T, :MM, :z]) in subgraphs
+end
+
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)
     any(clique_res.clique_equations .∈ [[1], [2], [3]]) &&

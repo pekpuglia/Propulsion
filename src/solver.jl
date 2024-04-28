@@ -41,12 +41,14 @@ end
 export subgraphs_connected_to_vertex
 function subgraphs_connected_to_vertex(adj_list::Vector{Tuple{Symbol, Symbol}}, vertex::Symbol, size::Int)
     if size == 1
-        return [vertex]
+        return [[vertex]]
     else
-        [
-            [vertex, subgraphs_connected_to_vertex(filter(pair -> vertex ∉ pair, adj_list), neighbor, size-1)...]
-            for neighbor in neighbors(vertex, adj_list)
-        ]
+        (
+            [vertex, other_subgraph...]
+            for neighbor in neighbors(vertex, adj_list) 
+                for other_subgraph in subgraphs_connected_to_vertex(
+                    filter(pair -> vertex ∉ pair, adj_list), neighbor, size-1)
+        )
     end
 end
 
