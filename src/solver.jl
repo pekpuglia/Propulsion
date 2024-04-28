@@ -85,7 +85,6 @@ struct CliqueResult
             elseif length(clique_vars) < length(clique_equations)
                 TooManyEquations
             end
-
         new(
             expected_clique_order,
             clique_equations,
@@ -137,8 +136,7 @@ function find_clique(
 
     variable_subgraphs = connected_subgraphs(T, clique_order)
 
-    clique_equations = []
-    clique_vars = []
+    ret = CliqueResult(clique_order, [], [])
 
     #var_subgraph guaranteed to have clique_order variables
     for var_subgraph in variable_subgraphs
@@ -152,14 +150,13 @@ function find_clique(
                 )
             )
         )
-        clique_equations = engaged_equations
-        clique_vars = possible_vars
-        if length(clique_vars) == clique_order
+        ret = CliqueResult(clique_order, engaged_equations, possible_vars)
+        if ret.diagnostic == CliqueFound
             break
         end
     end
     
-    return CliqueResult(clique_order, clique_equations, clique_vars)
+    return ret
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
