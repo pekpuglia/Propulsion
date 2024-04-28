@@ -118,15 +118,15 @@ using IterTools
 export find_clique
 function find_clique(
     T::Type{<:PhysicalProperties}, 
-    given_vars::AbstractVector{Symbol}, 
+    given_vars::AbstractVector{Symbol}, #remover! - redundante com remaining_variables_per_equation
     clique_order::Int,
     remaining_variables_per_equation=nothing
 ) #list of sets of equations with the same remaining variables
-    allvars = variables(T)
-    missingvars = setdiff(allvars, given_vars)
     pv = participation_vector(T)
+    allvars = variables(T)
 
     if isnothing(remaining_variables_per_equation)
+        missingvars = setdiff(allvars, given_vars)
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
 
@@ -142,14 +142,19 @@ function find_clique(
 
     #var_subgraph guaranteed to have clique_order variables
     for var_subgraph in variable_subgraphs
+        possible_vars = filter(var -> any(var ∈ rem_vars for rem_vars in remaining_variables_per_equation), var_subgraph)
         engaged_equations = unique(
-            vcat(
-                getindex.([variable_participation_dict], filter(∉(given_vars), var_subgraph))...
+            #filter equations that only have vars ∈ possible_vars
+            filter(
+                eq -> all(var_eq ∈ var_subgraph for var_eq in remaining_variables_per_equation[eq]),
+                vcat(
+                    getindex.([variable_participation_dict], possible_vars)...
+                )
             )
         )
         clique_equations = engaged_equations
-        clique_vars = var_subgraph
-        if length(engaged_equations) == clique_order
+        clique_vars = possible_vars
+        if length(clique_vars) == clique_order
             break
         end
     end
@@ -277,7 +282,7 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
             if numerically_solve
                 known_data, missingvars = solve_step(T, clique_result, known_data, missingvars, initial_guesses_dict)
             end
-            remaining_variables_per_equation = remaining_variables_per_equation = [
+            remaining_variables_per_equation = [
                 filter(∉(clique_result.clique_vars), rem_vars)
                 for rem_vars in remaining_variables_per_equation
             ]
