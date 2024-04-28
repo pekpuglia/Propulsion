@@ -124,9 +124,9 @@ function find_clique(
 ) #list of sets of equations with the same remaining variables
     pv = participation_vector(T)
     allvars = variables(T)
+    missingvars = setdiff(allvars, given_vars)
 
     if isnothing(remaining_variables_per_equation)
-        missingvars = setdiff(allvars, given_vars)
         remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
     end
 
@@ -142,7 +142,7 @@ function find_clique(
 
     #var_subgraph guaranteed to have clique_order variables
     for var_subgraph in variable_subgraphs
-        possible_vars = filter(var -> any(var ∈ rem_vars for rem_vars in remaining_variables_per_equation), var_subgraph)
+        possible_vars = filter(var -> var ∈ missingvars, var_subgraph)
         engaged_equations = unique(
             #filter equations that only have vars ∈ possible_vars
             filter(
@@ -160,37 +160,6 @@ function find_clique(
     end
     
     return CliqueResult(clique_order, clique_equations, clique_vars)
-
-    # clique_candidate_subsets = subsets(
-    #     findall(!isempty, remaining_variables_per_equation), clique_order)
-
-    # unique_vars = Iterators.map(eq_subset -> unique(
-    #     cat(remaining_variables_per_equation[eq_subset]..., dims=1)), clique_candidate_subsets)
-    
-    # clique_equations = []
-    # clique_vars = []
-    
-    # nonempty_indices = findeach(x -> !isempty(x), unique_vars)
-    # unique_vars = selectindices(unique_vars, nonempty_indices)
-
-    # clique_candidate_subsets = selectindices(clique_candidate_subsets, nonempty_indices)
-
-    # for (equation_subset, unique_var) in zip(clique_candidate_subsets, unique_vars)
-        
-    #     clique_equations = equation_subset
-    #     clique_vars = unique_var
-
-    #     #usar equation subset?
-    #     if length(unique_var) == clique_order
-    #         #check that there is no other subset with the same unique variables
-    #         #in this case, include the other equations as well
-    #         subsets_with_only_these_variables = selectindices(clique_candidate_subsets, findeach(==(unique_var), unique_vars))
-    #         clique_equations = cat(subsets_with_only_these_variables..., dims=1)
-    #         break
-    #     end
-    # end
-    
-    # CliqueResult(clique_order, clique_equations, clique_vars)
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
