@@ -189,14 +189,15 @@ function test_adjacency_list()
     adjacency_list(MassProperties)
 end
 
-@test test_adjacency_list() == Dict(
-    :T   => [:P, :z],
-    :P   => [:T, :z],
-    :R   => [:MM],
-    :rho => [:MM, :z],
-    :MM  => [:R, :rho, :z],
-    :z   => [:P, :T, :rho, :MM],
-)
+@test test_adjacency_list() == [
+    (:P, :T), 
+    (:P, :z), 
+    (:z, :T), 
+    (:z, :rho), 
+    (:z, :MM), 
+    (:MM, :R), 
+    (:MM, :rho)
+]
 
 function test_find_clique_1_var()
     clique_res = find_clique(MassProperties, [:P, :z, :MM], 1)

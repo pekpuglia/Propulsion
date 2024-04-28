@@ -8,10 +8,12 @@ end
 export adjacency_list
 function adjacency_list(T::Type{<:PhysicalProperties})
     pv = participation_vector(T)
-    Dict(
-        v => unique(
+    vars = variables(T)
+    [
+        (v, other)
+        for (i, v) in enumerate(vars[1:(end-1)]) for other in unique(
             filter(
-                !=(v), 
+                cand -> cand ∈ vars[(i+1):end],
                 vcat(
                     pv[
                         findall(eq_members -> v ∈ eq_members, pv)
@@ -19,8 +21,7 @@ function adjacency_list(T::Type{<:PhysicalProperties})
                 )
             )
         )
-        for v in variables(T)
-    )
+    ]
 end
 
 #change to single clique repr
