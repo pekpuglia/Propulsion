@@ -9,11 +9,10 @@ export adjacency_list
 function adjacency_list(T::Type{<:PhysicalProperties})
     pv = participation_vector(T)
     vars = variables(T)
-    [
-        (v, other)
-        for (i, v) in enumerate(vars[1:(end-1)]) for other in unique(
+    Dict(
+        v => unique(
             filter(
-                cand -> cand ∈ vars[(i+1):end],
+                !=(v),
                 vcat(
                     pv[
                         findall(eq_members -> v ∈ eq_members, pv)
@@ -21,7 +20,8 @@ function adjacency_list(T::Type{<:PhysicalProperties})
                 )
             )
         )
-    ]
+        for (i, v) in enumerate(vars)
+    )
 end
 
 function neighbors(vertex::Symbol, adj_list::Vector{Tuple{Symbol, Symbol}})
@@ -31,25 +31,41 @@ function neighbors(vertex::Symbol, adj_list::Vector{Tuple{Symbol, Symbol}})
         first
 end
 
-# export connected_subgraphs
-# function connected_subgraphs(T::Type{<:PhysicalProperties}, size::Int)
-#     connected_subgraphs(adjacency_list(T), size)
-# end
-#how many connected_subgraphs of size N are there?
-#we have V vertices, E edges
-#at most choose(V, N)
-export subgraphs_connected_to_vertex
-function subgraphs_connected_to_vertex(adj_list::Vector{Tuple{Symbol, Symbol}}, vertex::Symbol, size::Int)
-    if size == 1
-        return [[vertex]]
-    else
-        (
-            [vertex, other_subgraph...]
-            for neighbor in neighbors(vertex, adj_list) 
-                for other_subgraph in subgraphs_connected_to_vertex(
-                    filter(pair -> vertex ∉ pair, adj_list), neighbor, size-1)
-        )
+export connected_subgraphs
+function connected_subgraphs(T::Type{<:PhysicalProperties}, size::Int)
+    connected_subgraphs(adjacency_list(T), size, [], variables(T), true)
+end
+
+#connected_subgraphs(MassProperties, 3) |> collect should be 
+# [:P, :T, :z]
+# [:P, :z, :rho]
+# [:P, :z, :MM]
+# [:z, :rho, :MM]
+# [:z, :MM, :R]
+# T, z, MM
+#adapted from https://stackoverflow.com/questions/75727217/fast-way-to-find-all-connected-subgraphs-of-given-size-in-python
+function connected_subgraphs(
+    adj_list::Dict{Symbol, Vector{Symbol}}, 
+    size::Int,
+    excluded,
+    possible,
+    first_call=false)
+    
+    #starting the iteration
+    possible = filter(p -> p ∉ excluded, possible)
+    
+    if size == 0
+        return [[]]
     end
+    (
+        [vertex, other_subgraphs...]
+        for (i, vertex) in enumerate(possible)
+            for other_subgraphs in connected_subgraphs(
+                adj_list, size-1, 
+                [excluded..., possible[1:i]...], 
+                (first_call) ? adj_list[vertex] : [adj_list[vertex]..., possible...]
+                )
+    )
 end
 
 #change to single clique repr
