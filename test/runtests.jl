@@ -189,27 +189,26 @@ function test_adjacency_list()
     adjacency_list(MassProperties)
 end
 
-@test test_adjacency_list() == [
-    (:P, :T), 
-    (:P, :z), 
-    (:z, :T), 
-    (:z, :rho), 
-    (:z, :MM), 
-    (:MM, :R), 
-    (:MM, :rho)
-]
+@test test_adjacency_list() == Dict(
+    :T   => [:P, :z],
+    :P   => [:T, :z],
+    :R   => [:MM],
+    :rho => [:MM, :z],
+    :MM  => [:R, :rho, :z],
+    :z   => [:P, :T, :rho, :MM],
+)
 
-@test Set(Propulsion.neighbors(:MM, adjacency_list(MassProperties))) == Set([:z, :R, :rho])
-
-function test_vertex_subgraphs()
-    subgraphs_connected_to_vertex(adjacency_list(MassProperties), :MM, 3)
-end
-
-@testset "vertex subgraphs" begin
-    subgraphs = test_vertex_subgraphs() .|> Set |> Set
-    @test Set([:P, :MM, :z]) in subgraphs
-    @test Set([:rho, :MM, :z]) in subgraphs
-    @test Set([:T, :MM, :z]) in subgraphs
+@testset "subgraphs" begin
+    subgraphs = connected_subgraphs(MassProperties, 3) .|> Set |> Set
+    @test Set([:P , :T  , :z]  ) in subgraphs
+    @test Set([:P , :z  , :rho]) in subgraphs
+    @test Set([:P , :z  , :MM] ) in subgraphs
+    @test Set([:z , :T  , :rho]) in subgraphs
+    @test Set([:z , :T  , :MM] ) in subgraphs
+    @test Set([:z , :rho, :MM] ) in subgraphs
+    @test Set([:z , :MM , :R]  ) in subgraphs
+    @test Set([:MM, :R  , :rho]) in subgraphs
+    @test length(subgraphs) == 8
 end
 
 function test_find_clique_1_var()

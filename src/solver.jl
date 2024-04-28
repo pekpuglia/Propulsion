@@ -47,10 +47,9 @@ end
 function connected_subgraphs(
     adj_list::Dict{Symbol, Vector{Symbol}}, 
     size::Int,
-    excluded,
-    possible,
+    excluded, #should be unique
+    possible, #should be unique
     first_call=false)
-    
     #starting the iteration
     possible = filter(p -> p ∉ excluded, possible)
     
@@ -62,8 +61,8 @@ function connected_subgraphs(
         for (i, vertex) in enumerate(possible)
             for other_subgraphs in connected_subgraphs(
                 adj_list, size-1, 
-                [excluded..., possible[1:i]...], 
-                (first_call) ? adj_list[vertex] : [adj_list[vertex]..., possible...]
+                unique([excluded..., possible[1:i]...]), 
+                (first_call) ? adj_list[vertex] : unique([adj_list[vertex]..., possible...])
                 )
     )
 end
