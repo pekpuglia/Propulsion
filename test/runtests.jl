@@ -221,7 +221,7 @@ end
 @test test_find_clique_1_var()
 
 function test_find_clique_2_var()
-    clique_res = find_clique(CalorificProperties, [:P, :R, :gamma], 2)
+    clique_res = find_clique(CalorificProperties, [:R, :gamma], 2)
     clique_res.clique_equations == [4, 5] &&
     Set(clique_res.clique_vars) == Set([:cp, :cv])
 end
