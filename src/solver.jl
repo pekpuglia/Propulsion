@@ -133,7 +133,7 @@ function find_clique(
         var => findall(vars_in_eq -> var ∈ vars_in_eq, pv)
         for var in allvars
     )
-
+    #remove input variables
     variable_subgraphs = connected_subgraphs(T, clique_order)
 
     ret = CliqueResult(clique_order, [], [])
@@ -151,7 +151,7 @@ function find_clique(
             )
         )
         ret = CliqueResult(clique_order, engaged_equations, possible_vars)
-        if ret.diagnostic == CliqueFound
+        if ret.diagnostic == CliqueFound || ret.diagnostic == TooManyEquations
             break
         end
     end
