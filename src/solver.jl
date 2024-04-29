@@ -247,6 +247,9 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
             #solve for var list
             if numerically_solve
                 known_data, missingvars = solve_step(T, clique_result, known_data, missingvars, initial_guesses_dict)
+            else
+                push!(known_data, clique_result.clique_vars...)
+                filter!(∈(clique_result.clique_vars), missingvars)
             end
             remaining_variables_per_equation = [
                 filter(∉(clique_result.clique_vars), rem_vars)
