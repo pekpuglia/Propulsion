@@ -80,10 +80,10 @@ struct CliqueResult
                 TooFewEquations
             elseif length(clique_vars) == length(clique_equations) == expected_clique_order
                 CliqueFound
-            elseif length(clique_vars) == length(clique_equations) == 0
-                NoCliqueFound
             elseif length(clique_vars) < length(clique_equations)
                 TooManyEquations
+            else
+                NoCliqueFound
             end
         new(
             expected_clique_order,
