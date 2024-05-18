@@ -80,14 +80,14 @@ function test_normal_shock_inf_or_nan()
        )
 end
 #broken bc overconstraint_validation takes forever
-@test_broken begin
+@testset "weird normal shocks" begin
     nsp = test_normal_shock_inf_or_nan() 
 
-    @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
-    @test isapprox(nsp.T_2, 486u"K", atol=1u"K")
-    @test isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
+    @test_broken isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
+    @test_broken isapprox(nsp.T_2, 486u"K", atol=1u"K")
+    @test_broken isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
     @test ustrip(nsp.a_2 ) > 0
-    @test isapprox(nsp.M_2, 0.577, atol = 1e-3)
+    @test_broken isapprox(nsp.M_2, 0.577, atol = 1e-3)
 end
 
 ############################################################################
