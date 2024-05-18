@@ -10,7 +10,9 @@ module Propulsion
 #sub/supersonic choice - initial guesses depend on the variables
 #discover when initial guess for M is required
 #wrap and use supersonic::Bool?
+
 #interval refactor! - allow negative force
+#maybe this solves NormalShock?
 
 #add ReTest
 
