@@ -80,7 +80,16 @@ function test_normal_shock_inf_or_nan()
        )
 end
 #broken bc overconstraint_validation takes forever
-@test_skip test_normal_shock_inf_or_nan() isa NormalShockProperties
+@test begin
+    nsp = test_normal_shock_inf_or_nan() 
+
+    @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
+    @test isapprox(nsp.T_2, 486u"K", atol=1u"K")
+    @test isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
+    @test ustrip(nsp.a_2 ) > 0
+    @test isapprox(nsp.M_2, 0.577, atol = 1e-3)
+end
+
 ############################################################################
 #internal coherence tests/unit tests
 
@@ -189,14 +198,17 @@ function test_adjacency_list()
     adjacency_list(MassProperties)
 end
 
-@test test_adjacency_list() == Dict(
-    :T   => [:P, :z],
-    :P   => [:T, :z],
-    :R   => [:MM],
-    :rho => [:MM, :z],
-    :MM  => [:R, :rho, :z],
-    :z   => [:P, :T, :rho, :MM],
-)
+@test begin
+    correct = Dict(
+        :T   => [:P, :z],
+        :P   => [:T, :z],
+        :R   => [:MM],
+        :rho => [:MM, :z],
+        :MM  => [:R, :rho, :z],
+        :z   => [:P, :T, :rho, :MM],
+    )
+    all(Set(correct[key]) == Set(value) for (key, value) in test_adjacency_list())
+end
 
 @testset "subgraphs" begin
     subgraphs = connected_subgraphs(MassProperties, 3) .|> Set |> Set
