@@ -28,7 +28,7 @@ r_molar(::Number) = Rmolar
 r_molar(::Real) = ustrip(DEF_MOLARCALORCAP_UNIT, Rmolar)
 
 function residues(tp::ThermodynamicProperties)
-    [tp.z*tp.T*r_molar(tp.P) - tp.P]
+    [tp.z*tp.T*r_molar(tp.P)/tp.P - 1]
 end
 ##
 export MassProperties
@@ -63,7 +63,7 @@ function residues(mp::MassProperties)
     [
         residues(mp.tp)
         mp.R * mp.MM / r_molar(mp.MM) - 1
-        mp.MM * mp.tp.z - mp.rho
+        mp.MM * mp.tp.z / mp.rho - 1
     ]
 end
 ##
@@ -96,11 +96,11 @@ function residues(cp::CalorificProperties)
     [
         residues(cp.mp)
         #cp = cv + R
-        cp.cv + cp.mp.R - cp.cp
+        (cp.cp - cp.cv) / cp.mp.R - 1
         #gamma = cp/cv
-        cp.gamma * cp.cv - cp.cp
+        cp.gamma * cp.cv / cp.cp - 1
         #a = sqrt(gamma R T)
-        cp.a^2 - (cp.gamma * cp.mp.R * cp.mp.tp.T)
+        cp.a^2 / (cp.gamma * cp.mp.R * cp.mp.tp.T) - 1
     ]
 end
 ##
@@ -138,15 +138,15 @@ function residues(fp::FlowProperties)
     [
         residues(fp.cal_prop)
         #M*a - v
-        fp.M * fp.cal_prop.a - fp.v
+        fp.M * fp.cal_prop.a / fp.v - 1
         #1 + (gamma - 1) / 2 * M^2 - T0/T
-        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) * fp.cal_prop.mp.tp.T - fp.T0
+        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) * fp.cal_prop.mp.tp.T / fp.T0 - 1
         #(1 + (gamma -  1) / 2 * M^2)^(gamma/(gamma-1)) - p0/p
-        ((1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (fp.cal_prop.gamma / (fp.cal_prop.gamma - 1))) * fp.cal_prop.mp.tp.P - fp.P0
+        ((1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (fp.cal_prop.gamma / (fp.cal_prop.gamma - 1))) * fp.cal_prop.mp.tp.P / fp.P0 - 1
         #(1 + (gamma -  1) / 2 * M^2)^(  1  /(gamma-1)) - rho0/rho
-        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cal_prop.gamma - 1)) * fp.cal_prop.mp.rho - fp.rho0
+        (1 + (fp.cal_prop.gamma - 1) / 2 * fp.M^2) ^ (1 / (fp.cal_prop.gamma - 1)) * fp.cal_prop.mp.rho / fp.rho0 - 1
         #a^2/(gamma-1) + v^2/2 - a0^2/(gamma-1)
-        fp.cal_prop.a^2 / (fp.cal_prop.gamma - 1) + fp.v^2 / 2 - fp.a0^2 / (fp.cal_prop.gamma - 1)
+        (fp.cal_prop.a^2 / (fp.cal_prop.gamma - 1) + fp.v^2 / 2) / fp.a0^2 / (fp.cal_prop.gamma - 1) - 1
     ]
 end
 ##
@@ -172,12 +172,12 @@ function residues(nsp::NormalShockProperties)
     [
         residues(nsp.fp1)
         residues(nsp.fp2)
-        nsp.fp1.gamma - nsp.fp2.gamma
-        nsp.fp1.R - nsp.fp2.R
-        (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1) / 2) * (nsp.fp2.gamma * nsp.fp2.M^2 - (nsp.fp2.gamma - 1) / 2) - ((nsp.fp1.gamma + 1)/2)^2
+        nsp.fp1.gamma / nsp.fp2.gamma - 1
+        nsp.fp1.R / nsp.fp2.R - 1
+        (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1) / 2) * (nsp.fp2.gamma * nsp.fp2.M^2 - (nsp.fp2.gamma - 1) / 2) / ((nsp.fp1.gamma + 1)/2)^2 - 1
         # nsp.fp2.M - sqrt((1 + (nsp.fp1.gamma - 1)/2 * nsp.fp1.M^2) / (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1)/2))
-        nsp.fp1.T0 - nsp.fp2.T0
-        nsp.fp2.P - nsp.fp1.P * (1 + 2nsp.fp1.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.gamma + 1))
+        nsp.fp1.T0 / nsp.fp2.T0 - 1
+        nsp.fp1.P * (1 + 2nsp.fp1.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.gamma + 1)) / nsp.fp2.P - 1
         # nsp.fp1.M - sqrt((nsp.fp2.P / nsp.fp1.P - 1) * (nsp.fp1.gamma + 1) / (2*nsp.fp1.gamma) + 1)
     ]
 end
@@ -241,11 +241,10 @@ function residues(qp::Quasi1dimflowProperties)
         residues(qp.fp)
         qp.A * qp.fp.v * qp.fp.cal_prop.mp.rho / qp.mdot - 1
         #p 682 anderson
-        qp.A * qp.fp.M -
-            qp.Astar * (
+        qp.Astar / (qp.A * qp.fp.M) * (
                 2 / (qp.fp.cal_prop.gamma + 1) * (
                     1 + (qp.fp.cal_prop.gamma - 1) / 2 * qp.fp.M ^ 2
-            )) ^ ((qp.fp.cal_prop.gamma + 1) / 2(qp.fp.cal_prop.gamma - 1))
+            )) ^ ((qp.fp.cal_prop.gamma + 1) / 2(qp.fp.cal_prop.gamma - 1)) - 1
     ]
 end
 
