@@ -161,6 +161,12 @@ end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
 #find_clique(FlowProperties, [:P, :MM, :rho, :M, :gamma, :R, :z, :P0, :rho0, :T, :a, :T0, :v, :a0], 2) - find cp, cv
 
+struct ResidueFunctionParameters
+    other_vars_dict::Dict
+    vars_to_solve_for::Vector{Symbol}
+    residue_indices::Vector{Int}
+end
+
 using Optimization, OptimizationOptimJL
 function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesses_dict)
     residue_index = cr.clique_equations
@@ -170,15 +176,20 @@ function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesse
     other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
     other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
     
-    residue_function = (values, p) -> residues(T(Dict(
-        Dict(var => value for (var, value) in zip(vars_to_solve_for, values))..., 
-        Dict(other_var => other_value 
-            for (other_var, other_value) in zip(
-                                        other_missing_vars, 
-                                        other_missing_values
-        ))...,
-        known_data...
-    )))[residue_index]
+    
+    other_vars_dict = Dict(known_data..., Dict(other_var => other_value 
+        for (other_var, other_value) in zip(
+                                    other_missing_vars, 
+                                    other_missing_values
+    ))...)
+
+
+    residue_function = (values, p::ResidueFunctionParameters) -> residues(
+        T(Dict(
+            Dict(
+                var => value for (var, value) in zip(p.vars_to_solve_for, values)
+            )..., p.other_vars_dict...
+        )))[p.residue_indices]
     
     opt_function = OptimizationFunction(
         (values, p) -> residue_function(values, p) .^ 2 |> sum,
@@ -188,6 +199,7 @@ function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesse
     initial_guess = getindex.(Ref(initial_guesses_dict), vars_to_solve_for)
     opt_problem = OptimizationProblem(
         opt_function, initial_guess,
+        ResidueFunctionParameters(other_vars_dict, vars_to_solve_for, residue_index),
         lb = √eps() * ones(size(initial_guess)),
         ub = fill(Inf, size(initial_guess)))
     sol = solve(opt_problem, Optim.IPNewton())
