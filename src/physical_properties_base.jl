@@ -18,7 +18,7 @@ function (T::Type{<:PhysicalProperties})(data_dict::AbstractDict)
 end
 
 function Base.Dict(pp::T) where T <: PhysicalProperties
-    Dict(var => getproperty(pp, var) for var in variables(T))
+    Dict(var => getindex(pp, var) for var in variables(T))
 end
 
 export dof
@@ -43,26 +43,34 @@ function add_units(pp::T, unit_dict) where T <: PhysicalProperties
     # parameters = cat(((i in indexes_to_recurse) ? add_units(getfield(pp, var), unit_dict) : getfield(pp, var) * unit_dict[var] for (i, var) in enumerate(vars))..., dims=1)
 
     parameters = Dict(
-        var => getproperty(pp, var) * unit_dict[var]
+        var => getindex(pp, var) * unit_dict[var]
         for var in variables(T)
     )
 
     T(parameters)
 end
 
-Base.propertynames(::T) where T <: PhysicalProperties = variables(T)
-
-##ONLY WORKS FOR SINGLE RECURSION CASE
-#does not allow for accessing inner PhysicalProperties!!! - change to indexing like a dict?
-function Base.getproperty(pp::T, s::Symbol) where T <: PhysicalProperties
-    vars = fieldnames(T)
+function Base.getindex(pp::T, s::Symbol) where T <: PhysicalProperties
+    fields = fieldnames(T)
     types = fieldtypes(T)
 
-    index_to_recurse = findall(types .<: PhysicalProperties)
+    subtype_indices = findall(types .<: PhysicalProperties)
 
-    @assert length(index_to_recurse) <= 1 "Cannot delegate property access due to ambiguity in field name $s"
-
-    (s in vars) ? getfield(pp, s) : getproperty(getfield(pp, vars[index_to_recurse[1]]), s)
+    if s in fields
+        return getfield(pp, s)
+    else
+        #single recursion case
+        if length(subtype_indices) == 1
+            return getindex(getfield(pp, fields[subtype_indices[1]]), s)
+        #strip index and recurse
+        else
+            subsym, ind = split(String(s), "_")
+            subsym = Symbol(subsym)
+            ind = parse(Int, ind)
+            subtype_index = subtype_indices[ind]
+            return getindex(getfield(pp, fields[subtype_index]), subsym)
+        end
+    end
 end
 
 units(T::Type{<:PhysicalProperties}) = Dict(var => NoUnits for var in variables(T))

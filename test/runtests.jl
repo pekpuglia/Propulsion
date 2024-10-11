@@ -8,7 +8,7 @@ function test_access_property()
     MassProperties(P = 1, T = 2, MM = 20)
 end
 
-@test test_access_property().P == 1
+@test test_access_property()[:P] == 1
 
 function test_reject_invalid_units()
     ThermodynamicProperties(P = 1u"Pa", T = 1.0)
@@ -34,7 +34,7 @@ function test_use_initial_value()
     )
 end
 
-@test test_use_initial_value().M > 1
+@test test_use_initial_value()[:M]> 1
 
 #constraint tests
 function test_mp_correct_input()
@@ -83,11 +83,11 @@ end
 @testset "weird normal shocks" begin
     # nsp = test_normal_shock_inf_or_nan() 
 
-    @test_skip isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
-    @test_skip isapprox(nsp.T_2, 486u"K", atol=1u"K")
-    @test_skip isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
-    @test_skip ustrip(nsp.a_2 ) > 0
-    @test_skip isapprox(nsp.M_2, 0.577, atol = 1e-3)
+    @test_skip isapprox(nsp[:P_2], 4.5u"atm", atol=0.1u"atm")
+    @test_skip isapprox(nsp[:T_2], 486u"K", atol=1u"K")
+    @test_skip isapprox(nsp[:v_2], 255u"m/s", atol=1u"m/s")
+    @test_skip ustrip(nsp[:a_2] ) > 0
+    @test_skip isapprox(nsp[:M_2], 0.577, atol = 1e-3)
 end
 
 ############################################################################
@@ -246,7 +246,7 @@ function test_air_molar_mass()
     MassProperties(P = 1u"bar", T = 300u"K", R = 287u"J/kg/K")
 end
 
-@test isapprox(test_air_molar_mass().MM, 28.9u"g/mol", atol=0.1u"g/mol")
+@test isapprox(test_air_molar_mass()[:MM], 28.9u"g/mol", atol=0.1u"g/mol")
 
 #anderson
 function test_flow_properties()
@@ -259,10 +259,10 @@ end
 
 @testset "examples 7.6 and 7.7" begin
     solution, solution2 = test_flow_properties()
-    @test isapprox(solution.T0, 817.8u"K", atol=1e-1u"K")
-    @test isapprox(solution.P0, 26.7u"atm", atol=1e-1u"atm")
-    @test isapprox(solution2.T0, 544.9u"Ra", atol=0.1u"Ra")
-    @test isapprox(solution2.v, 862u"ft/s", atol=1u"ft/s")
+    @test isapprox(solution[:T0], 817.8u"K", atol=1e-1u"K")
+    @test isapprox(solution[:P0], 26.7u"atm", atol=1e-1u"atm")
+    @test isapprox(solution2[:T0], 544.9u"Ra", atol=0.1u"Ra")
+    @test isapprox(solution2[:v ], 862u"ft/s", atol=1u"ft/s")
 end
 
 #Quasi1dimflowProperties tests
@@ -280,9 +280,9 @@ end
 
 @testset "example 10.1" begin 
     sol = test_example_10_1()
-    @test isapprox(sol.M, 3.95, atol=0.01)
-    @test isapprox(sol.P, 0.035u"atm", atol=1e-3u"atm")
-    @test isapprox(sol.T, 145.6u"Ra", atol=0.1u"Ra")
+    @test isapprox(sol[:M], 3.95, atol=0.01)
+    @test isapprox(sol[:P], 0.035u"atm", atol=1e-3u"atm")
+    @test isapprox(sol[:T], 145.6u"Ra", atol=0.1u"Ra")
 end
 
 #NozzleFlowProperties test
@@ -313,15 +313,15 @@ end
 @testset "example 10.2" begin
     nfp_supersonic, nfp_subsonic = test_example_10_2()
     
-    @test isapprox(nfp_supersonic[1].P, 0.528u"atm", atol=1e-3u"atm")
-    @test isapprox(nfp_supersonic[1].T, 240u"K", atol=1u"K")
-    @test isapprox(nfp_supersonic[2].M, 2.2, atol=0.1)
+    @test isapprox(nfp_supersonic[1][:P], 0.528u"atm", atol=1e-3u"atm")
+    @test isapprox(nfp_supersonic[1][:T], 240u"K", atol=1u"K")
+    @test isapprox(nfp_supersonic[2][:M], 2.2, atol=0.1)
     #small numerical difference
-    @test isapprox(nfp_supersonic[2].P, 0.0935u"atm", atol=2e-3u"atm")
-    @test isapprox(nfp_supersonic[2].T, 146u"K", atol=1u"K")
-    @test isapprox(nfp_subsonic[2].M, 0.3, atol=0.1)
-    @test isapprox(nfp_subsonic[2].P, 0.94u"atm", atol=1e-2u"atm")
-    @test isapprox(nfp_subsonic[2].T, 282.9u"K", atol=0.2u"K")
+    @test isapprox(nfp_supersonic[2][:P], 0.0935u"atm", atol=2e-3u"atm")
+    @test isapprox(nfp_supersonic[2][:T], 146u"K", atol=1u"K")
+    @test isapprox(nfp_subsonic[2][:M], 0.3, atol=0.1)
+    @test isapprox(nfp_subsonic[2][:P], 0.94u"atm", atol=1e-2u"atm")
+    @test isapprox(nfp_subsonic[2][:T], 282.9u"K", atol=0.2u"K")
 end
 
 function test_example_10_4()
@@ -337,11 +337,11 @@ end
 
 @testset "example 10.4" begin
     sol = test_example_10_4()
-    @test isapprox(sol.rho0, 1.665u"kg/m^3", atol=10u"g/m^3")
-    @test isapprox(sol.rho, 1.036u"kg/m^3", atol=10u"g/m^3")
-    @test isapprox(sol.T, 3154u"K", atol=1u"K")
-    @test isapprox(sol.a, 1415u"m/s", atol=1u"m/s")
-    @test isapprox(sol.mdot, 586.4u"kg/s", atol=2u"kg/s")
+    @test isapprox(sol[:rho0], 1.665u"kg/m^3", atol=10u"g/m^3")
+    @test isapprox(sol[:rho], 1.036u"kg/m^3", atol=10u"g/m^3")
+    @test isapprox(sol[:T], 3154u"K", atol=1u"K")
+    @test isapprox(sol[:a], 1415u"m/s", atol=1u"m/s")
+    @test isapprox(sol[:mdot], 586.4u"kg/s", atol=2u"kg/s")
 end
 
 function test_example_8_11()
@@ -357,9 +357,9 @@ end
 @testset "example 8.11" begin 
     nsp = test_example_8_11()
 
-    @test isapprox(nsp.P_2, 4.5u"atm", atol=0.1u"atm")
-    @test isapprox(nsp.T_2, 486u"K", atol=1u"K")
-    @test isapprox(nsp.v_2, 255u"m/s", atol=1u"m/s")
-    @test ustrip(nsp.a_2 ) > 0
-    @test isapprox(nsp.M_2, 0.577, atol = 1e-3)
+    @test isapprox(nsp[:P_2], 4.5u"atm", atol=0.1u"atm")
+    @test isapprox(nsp[:T_2], 486u"K", atol=1u"K")
+    @test isapprox(nsp[:v_2], 255u"m/s", atol=1u"m/s")
+    @test ustrip(  nsp[:a_2] ) > 0
+    @test isapprox(nsp[:M_2], 0.577, atol = 1e-3)
 end

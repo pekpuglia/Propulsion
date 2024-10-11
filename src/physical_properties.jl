@@ -172,12 +172,12 @@ function residues(nsp::NormalShockProperties)
     [
         residues(nsp.fp1)
         residues(nsp.fp2)
-        nsp.fp1.gamma - nsp.fp2.gamma
-        nsp.fp1.R - nsp.fp2.R
-        (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1) / 2) * (nsp.fp2.gamma * nsp.fp2.M^2 - (nsp.fp2.gamma - 1) / 2) - ((nsp.fp1.gamma + 1)/2)^2
+        nsp.fp1.cal_prop.gamma - nsp.fp2.cal_prop.gamma
+        nsp.fp1.cal_prop.mp.R - nsp.fp2.cal_prop.mp.R
+        (nsp.fp1.cal_prop.gamma * nsp.fp1.M^2 - (nsp.fp1.cal_prop.gamma - 1) / 2) * (nsp.fp2.cal_prop.gamma * nsp.fp2.M^2 - (nsp.fp2.cal_prop.gamma - 1) / 2) - ((nsp.fp1.cal_prop.gamma + 1)/2)^2
         # nsp.fp2.M - sqrt((1 + (nsp.fp1.gamma - 1)/2 * nsp.fp1.M^2) / (nsp.fp1.gamma * nsp.fp1.M^2 - (nsp.fp1.gamma - 1)/2))
         nsp.fp1.T0 - nsp.fp2.T0
-        nsp.fp2.P - nsp.fp1.P * (1 + 2nsp.fp1.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.gamma + 1))
+        nsp.fp2.cal_prop.mp.tp.P - nsp.fp1.cal_prop.mp.tp.P * (1 + 2nsp.fp1.cal_prop.gamma*(nsp.fp1.M^2 - 1) / (nsp.fp1.cal_prop.gamma + 1))
         # nsp.fp1.M - sqrt((nsp.fp2.P / nsp.fp1.P - 1) * (nsp.fp1.gamma + 1) / (2*nsp.fp1.gamma) + 1)
     ]
 end
@@ -193,19 +193,19 @@ function NormalShockProperties(data_dict::Dict)
     )
 end
 
-function Base.getproperty(nsp::NormalShockProperties, s::Symbol)
-    if s in fieldnames(NormalShockProperties)
-        getfield(nsp, s)
-    else
-        if string(s)[(end-1):end] == "_1"
-            getproperty(nsp.fp1, Symbol(string(s)[1:(end-2)]))
-        elseif string(s)[(end-1):end] == "_2"
-            getproperty(nsp.fp2, Symbol(string(s)[1:(end-2)]))
-        else
-            error("property $s cannot be found among fields or variables")
-        end
-    end
-end
+# function Base.getproperty(nsp::NormalShockProperties, s::Symbol)
+#     if s in fieldnames(NormalShockProperties)
+#         getfield(nsp, s)
+#     else
+#         if string(s)[(end-1):end] == "_1"
+#             getproperty(nsp.fp1, Symbol(string(s)[1:(end-2)]))
+#         elseif string(s)[(end-1):end] == "_2"
+#             getproperty(nsp.fp2, Symbol(string(s)[1:(end-2)]))
+#         else
+#             error("property $s cannot be found among fields or variables")
+#         end
+#     end
+# end
 
 default_initial_guesses(::Type{NormalShockProperties}) = Dict(
     :gamma_2 => 1.4
@@ -287,21 +287,21 @@ function residues(nfp::NozzleFlowProperties)
         residues(nfp.sec1)
         residues(nfp.sec2)
         nfp.sec1.fp.cal_prop.gamma - nfp.sec2.fp.cal_prop.gamma
-        nfp.sec1.R - nfp.sec2.R
+        nfp.sec1.fp.cal_prop.mp.R - nfp.sec2.fp.cal_prop.mp.R
         nfp.sec1.Astar - nfp.sec2.Astar
         nfp.sec1.mdot - nfp.sec2.mdot
-        nfp.sec1.T0 - nfp.sec2.T0
+        nfp.sec1.fp.T0 - nfp.sec2.fp.T0
         nfp.F - (
-            nfp.sec2.mdot * nfp.sec2.v - nfp.sec2.P * nfp.sec2.A
+            nfp.sec2.mdot * nfp.sec2.fp.v - nfp.sec2.fp.cal_prop.mp.tp.P * nfp.sec2.A
         ) + (
-            nfp.sec1.mdot * nfp.sec1.v - nfp.sec1.P * nfp.sec1.A
+            nfp.sec1.mdot * nfp.sec1.fp.v - nfp.sec1.fp.cal_prop.mp.tp.P * nfp.sec1.A
         )
     ]
 end
 
-Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
+# Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
 
-function Base.getindex(nfp::NozzleFlowProperties, i)
+function Base.getindex(nfp::NozzleFlowProperties, i::Int)
     if !(i == 1 || i == 2)
         throw(BoundsError(nfp, i))
     end
