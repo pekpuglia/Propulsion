@@ -254,7 +254,7 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
 
             error("variables $over_constrained_variables are overconstrained\nby the following equations: $over_constrained_equations")
         end
-
+        display(clique_result)
         if clique_result.diagnostic == CliqueFound
             #solve for var list
             if numerically_solve
