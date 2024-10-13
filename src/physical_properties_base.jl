@@ -1,4 +1,4 @@
-using Unitful, Symbolics
+using Unitful
 
 
 abstract type PhysicalProperties end
@@ -102,20 +102,9 @@ promote_rule(::Type{SymbolicParticipationVariable}, ::Type{<:Number}) = Symbolic
 
 ## symbolic analysis tools
 function sym_vars(T::Type{<:PhysicalProperties})
-    Dict(var => (@variables $var)[1] for var in variables(T))
+    Dict(var => SymbolicParticipationVariable([var]) for var in variables(T))
 end
 
 function participation_vector(T::Type{<:PhysicalProperties})
-    sym_var_dict = sym_vars(T)
-    part_vector_symbolic = Symbolics.get_variables.(residues(T(sym_var_dict)))
-    
-    rev_svd = Dict(values(sym_var_dict) .=> keys(sym_var_dict))
-
-    map(v -> getindex.([rev_svd], v), part_vector_symbolic)
-end
-
-#not needed
-function sym_jacobian(T::Type{<:PhysicalProperties})
-    sym_var_dict = sym_vars(T)
-    Symbolics.jacobian(residues(T(sym_var_dict)), values(sym_var_dict) |> collect)
+    T |> sym_vars |> T |> residues .|> (x->x.variables)
 end
