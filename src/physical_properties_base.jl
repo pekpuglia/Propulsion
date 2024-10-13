@@ -80,6 +80,18 @@ residues(::T) where T <: PhysicalProperties = error("PhysicalProperties types mu
 
 default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
 
+export SymbolicParticipationVariable
+
+struct SPV1
+    variables::Vector{Symbol}
+end
+
+SymbolicParticipationVariable = SPV1
+
+for op in [:+, :-, :*, :/, :^]
+    @eval Base.$op(spvs::SymbolicParticipationVariable...) = SymbolicParticipationVariable(vcat(getfield.(spvs, :variables)...))
+end
+
 ## symbolic analysis tools
 function sym_vars(T::Type{<:PhysicalProperties})
     Dict(var => (@variables $var)[1] for var in variables(T))
@@ -94,6 +106,7 @@ function participation_vector(T::Type{<:PhysicalProperties})
     map(v -> getindex.([rev_svd], v), part_vector_symbolic)
 end
 
+#not needed
 function sym_jacobian(T::Type{<:PhysicalProperties})
     sym_var_dict = sym_vars(T)
     Symbolics.jacobian(residues(T(sym_var_dict)), values(sym_var_dict) |> collect)
