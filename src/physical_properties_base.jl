@@ -82,15 +82,23 @@ default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
 
 export SymbolicParticipationVariable
 
-struct SPV1
+struct SPV2 <: Real
     variables::Vector{Symbol}
 end
 
-SymbolicParticipationVariable = SPV1
-
-for op in [:+, :-, :*, :/, :^]
-    @eval Base.$op(spvs::SymbolicParticipationVariable...) = SymbolicParticipationVariable(vcat(getfield.(spvs, :variables)...))
+function SPV2(x::Number)
+    SPV2([])
 end
+
+SymbolicParticipationVariable = SPV2
+
+for op in [(:+), (:-), (:*), (:/), (:^)]
+    @eval import Base.$op
+    @eval $op(spvs::SymbolicParticipationVariable...) = SymbolicParticipationVariable(vcat(getfield.(spvs, :variables)...))
+end
+
+import Base.promote_rule
+promote_rule(::Type{SymbolicParticipationVariable}, ::Type{<:Number}) = SymbolicParticipationVariable
 
 ## symbolic analysis tools
 function sym_vars(T::Type{<:PhysicalProperties})
