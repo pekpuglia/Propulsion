@@ -32,8 +32,13 @@ function neighbors(vertex::Symbol, adj_list::Vector{Tuple{Symbol, Symbol}})
 end
 
 export connected_subgraphs
-function connected_subgraphs(T::Type{<:PhysicalProperties}, size::Int)
-    connected_subgraphs(adjacency_list(T), size, [], variables(T), true)
+function connected_subgraphs(T::Type{<:PhysicalProperties}, size::Int, remaining_variables_per_equation=nothing)
+    #previous attempts
+    # #[given_vars; filter(∉(given_vars), variables(T))]
+    remaining_variables_per_equation = something(remaining_variables_per_equation, participation_vector(T))
+    reordered_variables = vcat(sort(remaining_variables_per_equation, by = length)...) |> unique
+
+    connected_subgraphs(adjacency_list(T), size, [], reordered_variables, true)
 end
 
 #connected_subgraphs(MassProperties, 3) |> collect should be 
@@ -134,10 +139,11 @@ function find_clique(
         for var in allvars
     )
     #remove input variables
-    variable_subgraphs = connected_subgraphs(T, clique_order)
+    variable_subgraphs = connected_subgraphs(T, clique_order, remaining_variables_per_equation)
 
     ret = CliqueResult(clique_order, [], [])
 
+    nsubgraphs = 0
     #var_subgraph guaranteed to have clique_order variables
     for var_subgraph in variable_subgraphs
         possible_vars = filter(var -> var ∈ missingvars, var_subgraph)
@@ -151,11 +157,12 @@ function find_clique(
             )
         )
         ret = CliqueResult(clique_order, engaged_equations, possible_vars)
+        nsubgraphs += 1
         if ret.diagnostic == CliqueFound || ret.diagnostic == TooManyEquations
             break
         end
     end
-    
+    display(nsubgraphs)
     return ret
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained

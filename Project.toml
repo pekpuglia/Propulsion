@@ -1,7 +1,7 @@
 name = "Propulsion"
 uuid = "75c4fa84-4321-49ed-822f-77a37d13600d"
 authors = ["pekpuglia <pepuglia@gmail.com>"]
-version = "0.5.1"
+version = "0.5.2"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
