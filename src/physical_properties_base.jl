@@ -82,15 +82,13 @@ default_initial_guesses(::Type{<:PhysicalProperties}) = Dict()
 
 export SymbolicParticipationVariable
 
-struct SPV2 <: Real
+struct SymbolicParticipationVariable <: Real
     variables::Vector{Symbol}
 end
 
-function SPV2(x::Number)
-    SPV2([])
+function SymbolicParticipationVariable(x::Number)
+    SymbolicParticipationVariable([])
 end
-
-SymbolicParticipationVariable = SPV2
 
 for op in [(:+), (:-), (:*), (:/), (:^)]
     @eval import Base.$op
