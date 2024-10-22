@@ -116,9 +116,14 @@ struct VariableData1
     upper_bound
 end
 
+export VariableData
 VariableData = VariableData1
-function Unitful.ustrip(unit, vd::VariableData)
-    VariableData1(ustrip(unit, vd.initial_guess), ustrip(unit, vd.lower_bound), ustrip(unit, vd.upper_bound))
+function Unitful.uconvert(unit, vd::VariableData)
+    VariableData1(uconvert(unit, vd.initial_guess), uconvert(unit, vd.lower_bound), uconvert(unit, vd.upper_bound))
+end
+
+function Unitful.ustrip(vd::VariableData)
+    VariableData1(ustrip(vd.initial_guess), ustrip(vd.lower_bound), ustrip(vd.upper_bound))
 end
 
 function VariableData1()
