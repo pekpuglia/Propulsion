@@ -106,3 +106,21 @@ end
 function participation_vector(T::Type{<:PhysicalProperties})
     T |> sym_vars |> T |> residues .|> (x->x.variables)
 end
+
+#incluir unidade?
+#default VD for specific variables
+#constructors: [lb, ub], IG
+struct VariableData1
+    initial_guess
+    lower_bound
+    upper_bound
+end
+
+VariableData = VariableData1
+function Unitful.ustrip(unit, vd::VariableData)
+    VariableData1(ustrip(unit, vd.initial_guess), ustrip(unit, vd.lower_bound), ustrip(unit, vd.upper_bound))
+end
+
+function VariableData1()
+    VariableData1(1, eps(), Inf)
+end
