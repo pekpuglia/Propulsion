@@ -10,9 +10,7 @@ module Propulsion
 #wrap and use supersonic::Bool?
 
 #variables have:
-#initial_guess
-#interval
-#units
+#units - test
 
 #maybe this solves NormalShock?
 #add entropy
@@ -20,6 +18,10 @@ module Propulsion
 #add de Laval Nozzle - multiple sections
 
 #add ReTest
+
+#refactor solver:
+#remove other_variables
+#better numerically_solve
 
 
 include("physical_properties_base.jl")
