@@ -1,7 +1,7 @@
 #debug help
 export sym_substitution_dict
-function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_data::Dict{Symbol, <:Real}, default_value=1.0)
-    Dict(sym_vars(T)[var] => (var in keys(input_data)) ? input_data[var] : (
+function sym_substitution_dict(T::Type{<:PhysicalProperties}, input_variables::Dict{Symbol, <:Real}, default_value=1.0)
+    Dict(sym_vars(T)[var] => (var in keys(input_variables)) ? input_variables[var] : (
         (var in keys(default_initial_guesses(T))) ? default_initial_guesses(T)[var] : default_value
     ) for var in variables(T))
 end
@@ -220,14 +220,14 @@ function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesse
 end
 #initial_guesses must be missingvars
 #melhorar
-function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector{Symbol}}, input_initial_guesses::Dict=Dict())
+function internal_solver(T::Type, input_variables::Union{Dict{Symbol, <:Real}, Vector{Symbol}}, variable_data::Dict=Dict())
     pv = participation_vector(T)
     allvars = variables(T)
     sym_residues = residues(T(sym_vars(T)))
 
-    numerically_solve = (input_data isa Dict)
+    numerically_solve = (input_variables isa Dict)
 
-    given_vars = (numerically_solve) ? keys(input_data) |> collect : input_data
+    given_vars = (numerically_solve) ? keys(input_variables) |> collect : input_variables
     missingvars = setdiff(allvars, given_vars) |> collect
     
     remaining_variables_per_equation = map(v -> v[v .∈ [missingvars]], pv)
@@ -238,10 +238,10 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
         error("Over-constrained equation: $(sym_residues[over_constrained_index]). Must not specify $over_constrained_equation_variables all at once")
     end
 
-    known_data = deepcopy(input_data)
+    known_data = deepcopy(input_variables)
 
     initial_guesses_dict = Dict(mv => 
-        Float64((mv ∈ keys(input_initial_guesses)) ? input_initial_guesses[mv] : 1.0)
+        Float64((mv ∈ keys(variable_data)) ? variable_data[mv] : 1.0)
         for mv in missingvars
     )
 
@@ -288,12 +288,12 @@ function internal_solver(T::Type, input_data::Union{Dict{Symbol, <:Real}, Vector
     (numerically_solve) ? T(known_data) : all(remaining_variables_per_equation .|> isempty)
 end
 
-function internal_solver(T::Type, input_data::Dict{Symbol, <:Number}, input_initial_guesses::Dict)
+function internal_solver(T::Type, input_variables::Dict{Symbol, <:Number}, variable_data::Dict{Symbol, VariableData})
     internal_units = units(T)
 
-    unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_data)
+    unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_variables)
 
-    unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_initial_guesses)
+    unitless_guesses = Dict(key => ustrip(internal_units[key], val) for (key, val) in variable_data)
 
     unitless_solution = internal_solver(T, unitless_kwargs, unitless_guesses)
      
@@ -304,32 +304,29 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
     allvars = variables(T)
     kwargs = Dict(kwargs)
 
-    initial_keys = filter(s -> startswith(string(s), "initial_"), keys(kwargs))
+    data_keys = filter(s -> endswith(string(s), "_data"), keys(kwargs))
+    # data_kwargs = filter(x -> x.first ∈ data_keys, kwargs)
+    data_kwargs = Dict(Symbol(string(key)[1:(end-length("_data"))]) => kwargs[key] for key in data_keys)
 
-    data_kwargs = filter(p -> p.first ∉ initial_keys, kwargs)
-    if all(isa.(values(data_kwargs), Real))
-        data_kwargs = Dict{Symbol, Real}(data_kwargs)
+
+    input_kwargs = filter(p -> p.first ∉ data_keys, kwargs)
+    if all(isa.(values(input_kwargs), Real))
+        input_kwargs = Dict{Symbol, Real}(input_kwargs)
     else
-        data_kwargs = Dict{Symbol, Number}(data_kwargs)
+        input_kwargs = Dict{Symbol, Number}(input_kwargs)
     end
-    initial_kwargs = Dict(
-        default_initial_guesses(T)...,
-        Dict(Symbol(string(init_key)[9:end]) => kwargs[init_key]
-        for init_key in initial_keys)...
-    )
 
     #correct parameters validation
-    if any([!(k in allvars) for k in keys(data_kwargs)])
-        error("expected keys from $allvars, got: $(keys(data_kwargs)) ")
+    if any([!(k in allvars) for k in keys(input_kwargs)])
+        error("expected keys from $allvars, got: $(keys(input_kwargs)) ")
     end
 
     #dof validation
-    if length(data_kwargs) != dof(T)
-        error("$(dof(T)) thermodynamic properties needed, $(length(data_kwargs)) given: $(keys(data_kwargs))")
+    if length(input_kwargs) != dof(T)
+        error("$(dof(T)) thermodynamic properties needed, $(length(input_kwargs)) given: $(keys(input_kwargs))")
     end
     
     # overconstraint_validation(T, keys(kwargs) |> collect)
 
-
-    internal_solver(T, data_kwargs, initial_kwargs)
+    internal_solver(T, input_kwargs, data_kwargs)
 end
