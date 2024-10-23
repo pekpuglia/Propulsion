@@ -110,22 +110,21 @@ end
 #incluir unidade?
 #default VD for specific variables
 #constructors: [lb, ub], IG
-struct VariableData1
+struct VariableData
     initial_guess
     lower_bound
     upper_bound
 end
 
 export VariableData
-VariableData = VariableData1
 function Unitful.uconvert(unit, vd::VariableData)
-    VariableData1(uconvert(unit, vd.initial_guess), uconvert(unit, vd.lower_bound), uconvert(unit, vd.upper_bound))
+    VariableData(uconvert(unit, vd.initial_guess), uconvert(unit, vd.lower_bound), uconvert(unit, vd.upper_bound))
 end
 
 function Unitful.ustrip(vd::VariableData)
-    VariableData1(ustrip(vd.initial_guess), ustrip(vd.lower_bound), ustrip(vd.upper_bound))
+    VariableData(ustrip(vd.initial_guess), ustrip(vd.lower_bound), ustrip(vd.upper_bound))
 end
 
-function VariableData1()
-    VariableData1(1, eps(), Inf)
+function VariableData()
+    VariableData(1, eps(), Inf)
 end

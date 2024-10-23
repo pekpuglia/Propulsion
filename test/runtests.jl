@@ -30,7 +30,7 @@ function test_use_initial_value()
         gamma = 1.4, 
         Astar = 0.85, 
         A = 1.0, 
-        initial_M=5
+        M_data=VariableData(5, 1, 10)
     )
 end
 
@@ -94,7 +94,7 @@ end
 #internal coherence tests/unit tests
 
 function test_internal_solver()
-    Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => 2.0))
+    Propulsion.internal_solver(ThermodynamicProperties, Dict(:P => 1.0, :T => 10.0), Dict(:z => VariableData(2.0, 0, Inf)))
 end
 
 #just test it built something
@@ -274,7 +274,7 @@ function test_example_10_1()
         T0 = 600u"Ra",
         gamma = 1.4,
         R = 287u"J/kg/K",
-        initial_M = 5
+        M_data = VariableData(5, 1, 10)
     )
 end
 
@@ -295,7 +295,7 @@ function test_example_10_2()
         R_1 = 287u"J/kg/K",
         Astar_1 = 1u"m^2",
         A_2 = 2u"m^2", 
-        initial_M_2 = 5)
+        M_2_data = VariableData(5, 1, 10))
 
     nfp_subsonic = NozzleFlowProperties(
         P0_1 = 1u"atm",
@@ -305,7 +305,7 @@ function test_example_10_2()
         R_1 = 287u"J/kg/K",
         Astar_1 = 1u"m^2",
         A_2 = 2u"m^2", 
-        initial_M_2 = 0.1)
+        M_2_data = VariableData(0.5, 0, 1))
         
     nfp_supersonic, nfp_subsonic
 end

@@ -175,15 +175,16 @@ struct ResidueFunctionParameters
 end
 
 using Optimization, OptimizationOptimJL
-function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesses_dict)
+function solve_step(T, cr::CliqueResult, known_data, missingvars, full__missing_variable_data::Dict{Symbol, VariableData})
     residue_index = cr.clique_equations
+
+    #3 groups of variables: known, to_solve, other. rewrite residues so others is not needed?
     vars_to_solve_for = cr.clique_vars
-    #i have known_data
-    #guess for missing vars which won't be solved this iteration
+
+    #guess for missing vars which won't be solved this iteration - needed?
     other_missing_vars = setdiff(missingvars, vars_to_solve_for, keys(known_data))
-    other_missing_values = getindex.(Ref(initial_guesses_dict), other_missing_vars)
-    
-    
+    other_variable_data = getindex.(Ref(full__missing_variable_data), other_missing_vars)
+    other_missing_values = getfield.(other_variable_data, :initial_guess)
     other_vars_dict = Dict(known_data..., Dict(other_var => other_value 
         for (other_var, other_value) in zip(
                                     other_missing_vars, 
@@ -202,13 +203,17 @@ function solve_step(T, cr::CliqueResult, known_data, missingvars, initial_guesse
         (values, p) -> residue_function(values, p) .^ 2 |> sum,
         AutoForwardDiff()
     )
-    #missing: initial guess for variables to solve now
-    initial_guess = getindex.(Ref(initial_guesses_dict), vars_to_solve_for)
+    
+    variable_data_to_solve = getindex.(Ref(full__missing_variable_data), vars_to_solve_for)
+    initial_guess = getfield.(variable_data_to_solve, :initial_guess) .|> Float64
+    lower_bound = getfield.(variable_data_to_solve, :lower_bound) .|> Float64
+    upper_bound = getfield.(variable_data_to_solve, :upper_bound) .|> Float64
+
     opt_problem = OptimizationProblem(
         opt_function, initial_guess,
         ResidueFunctionParameters(other_vars_dict, vars_to_solve_for, residue_index),
-        lb = √eps() * ones(size(initial_guess)),
-        ub = fill(Inf, size(initial_guess)))
+        lb = lower_bound,
+        ub = upper_bound)
     sol = solve(opt_problem, Optim.IPNewton())
     @assert Bool(sol.retcode)
 
@@ -240,10 +245,12 @@ function internal_solver(T::Type, input_variables::Union{Dict{Symbol, <:Real}, V
 
     known_data = deepcopy(input_variables)
 
-    initial_guesses_dict = Dict(mv => 
-        Float64((mv ∈ keys(variable_data)) ? variable_data[mv] : 1.0)
-        for mv in missingvars
-    )
+    if numerically_solve
+        #pass var to default VariableData constructor
+        full__missing_variable_data = Dict(
+            var => (var in keys(variable_data)) ? variable_data[var] : VariableData() for var in missingvars
+        )
+    end
 
 
     max_clique_order = length(missingvars)
@@ -265,7 +272,8 @@ function internal_solver(T::Type, input_variables::Union{Dict{Symbol, <:Real}, V
         if clique_result.diagnostic == CliqueFound
             #solve for var list
             if numerically_solve
-                known_data, missingvars = solve_step(T, clique_result, known_data, missingvars, initial_guesses_dict)
+                #union(keys(known_data), missing_vars) = variables(T)
+                known_data, missingvars = solve_step(T, clique_result, known_data, missingvars, full__missing_variable_data)
             else
                 push!(known_data, clique_result.clique_vars...)
                 filter!(∈(clique_result.clique_vars), missingvars)
@@ -288,7 +296,7 @@ function internal_solver(T::Type, input_variables::Union{Dict{Symbol, <:Real}, V
     (numerically_solve) ? T(known_data) : all(remaining_variables_per_equation .|> isempty)
 end
 
-function internal_solver(T::Type, input_variables::Dict{Symbol, <:Number}, variable_data::Dict{Symbol, VariableData})
+function internal_solver(T::Type, input_variables::Dict{Symbol, <:Number}, variable_data::Dict)
     internal_units = units(T)
 
     unitless_kwargs = Dict(key => ustrip(internal_units[key], val) for (key, val) in input_variables)
@@ -306,7 +314,7 @@ function (T::Type{<:PhysicalProperties})(; kwargs...)
 
     data_keys = filter(s -> endswith(string(s), "_data"), keys(kwargs))
     # data_kwargs = filter(x -> x.first ∈ data_keys, kwargs)
-    data_kwargs = Dict(Symbol(string(key)[1:(end-length("_data"))]) => kwargs[key] for key in data_keys)
+    data_kwargs = Dict{Symbol, VariableData}(Symbol(string(key)[1:(end-length("_data"))]) => kwargs[key] for key in data_keys)
 
 
     input_kwargs = filter(p -> p.first ∉ data_keys, kwargs)
