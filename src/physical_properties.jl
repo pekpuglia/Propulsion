@@ -306,12 +306,8 @@ end
 
 # Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
 
-function Base.getindex(nfp::NozzleFlowProperties, i::Int)
-    if !(i == 1 || i == 2)
-        throw(BoundsError(nfp, i))
-    end
-
-    (i == 1) ? nfp.sec1 : nfp.sec2
+function Base.getindex(nfp::NozzleFlowProperties{N}, i::Int) where N
+    nfp.secs[i]
 end
 
 function select_and_remove_dict_key_suffix(suff::String, dict)
