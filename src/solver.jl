@@ -162,7 +162,7 @@ function find_clique(
             break
         end
     end
-    display(nsubgraphs)
+    # display(nsubgraphs)
     return ret
 end
 #find_clique(MassProperties, [:P, :MM, :T, :rho], 1) - should return :z is overconstrained
@@ -268,7 +268,7 @@ function internal_solver(T::Type, input_variables::Union{Dict{Symbol, <:Real}, V
 
             error("variables $over_constrained_variables are overconstrained\nby the following equations: $over_constrained_equations")
         end
-        display(clique_result)
+        # display(clique_result)
         if clique_result.diagnostic == CliqueFound
             #solve for var list
             if numerically_solve
