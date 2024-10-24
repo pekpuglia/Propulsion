@@ -286,21 +286,22 @@ function units(T::Type{NozzleFlowProperties{N}}) where N
     )
 end
 
-function residues(nfp::NozzleFlowProperties)
-    [
-        residues(nfp.sec1)
-        residues(nfp.sec2)
-        nfp.sec1.fp.cal_prop.gamma - nfp.sec2.fp.cal_prop.gamma
-        nfp.sec1.fp.cal_prop.mp.R - nfp.sec2.fp.cal_prop.mp.R
-        nfp.sec1.Astar - nfp.sec2.Astar
-        nfp.sec1.mdot - nfp.sec2.mdot
-        nfp.sec1.fp.T0 - nfp.sec2.fp.T0
+function residues(nfp::NozzleFlowProperties{N}) where N
+    vcat(
+        (residues(sec) for sec in nfp.secs)...,
+        ([
+            nfp.secs[1].fp.cal_prop.gamma - seci.fp.cal_prop.gamma
+            nfp.secs[1].fp.cal_prop.mp.R - seci.fp.cal_prop.mp.R
+            nfp.secs[1].Astar - seci.Astar
+            nfp.secs[1].mdot - seci.mdot
+            nfp.secs[1].fp.T0 - seci.fp.T0
+        ] for seci in nfp.secs[2:end])...,
         nfp.F - (
-            nfp.sec2.mdot * nfp.sec2.fp.v - nfp.sec2.fp.cal_prop.mp.tp.P * nfp.sec2.A
+            nfp.secs[end].mdot * nfp.secs[end].fp.v - nfp.secs[end].fp.cal_prop.mp.tp.P * nfp.secs[end].A
         ) + (
-            nfp.sec1.mdot * nfp.sec1.fp.v - nfp.sec1.fp.cal_prop.mp.tp.P * nfp.sec1.A
+            nfp.secs[1].mdot * nfp.secs[1].fp.v - nfp.secs[1].fp.cal_prop.mp.tp.P * nfp.secs[1].A
         )
-    ]
+    )
 end
 
 # Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
