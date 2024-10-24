@@ -101,7 +101,7 @@ end
 @test test_internal_solver() isa ThermodynamicProperties
 
 function test_nozzle_flow_from_dict()
-    NozzleFlowProperties(Dict(
+    NozzleFlowProperties{2}(Dict(
         :F => 2u"N",
         :P_1 => 1u"Pa",
         :T_1 => 1u"K",
@@ -148,7 +148,7 @@ end
 @test test_nozzle_flow_from_dict() isa NozzleFlowProperties
 
 function test_residue_unit_coherence()
-    residues(NozzleFlowProperties(Dict(
+    residues(NozzleFlowProperties{2}(Dict(
         :F => 2u"N",
         :P_1 => 1u"Pa",
         :T_1 => 1u"K",
@@ -287,7 +287,7 @@ end
 
 #NozzleFlowProperties test
 function test_example_10_2()
-    nfp_supersonic = NozzleFlowProperties(
+    nfp_supersonic = NozzleFlowProperties{2}(
         P0_1 = 1u"atm",
         T0_1 = 288u"K",
         M_1 = 1,
@@ -297,7 +297,7 @@ function test_example_10_2()
         A_2 = 2u"m^2", 
         M_2_data = VariableData(5, 1, 10))
 
-    nfp_subsonic = NozzleFlowProperties(
+    nfp_subsonic = NozzleFlowProperties{2}(
         P0_1 = 1u"atm",
         T0_1 = 288u"K",
         M_1 = 1,

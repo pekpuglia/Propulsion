@@ -1,7 +1,7 @@
 name = "Propulsion"
 uuid = "75c4fa84-4321-49ed-822f-77a37d13600d"
 authors = ["pekpuglia <pepuglia@gmail.com>"]
-version = "0.5.3"
+version = "0.6"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -12,5 +12,6 @@ OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
