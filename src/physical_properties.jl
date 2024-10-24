@@ -253,15 +253,14 @@ end
 #expand for N sections
 #refactor
 export NozzleFlowProperties
-struct NozzleFlowProperties <: PhysicalProperties
-    sec1::Quasi1dimflowProperties
-    sec2::Quasi1dimflowProperties
+struct NozzleFlowProperties1 <: PhysicalProperties
+    secs::Vector{Quasi1dimflowProperties}
     F
-    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
-        new(sec1, sec2, F)
+    function NozzleFlowProperties1(secs::Vector{Quasi1dimflowProperties}, F::Real)
+        new(secs, F)
     end
-    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Unitful.Force)
-        new(sec1, sec2, F)
+    function NozzleFlowProperties1(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
+        new(secs, F)
     end
 end
 
