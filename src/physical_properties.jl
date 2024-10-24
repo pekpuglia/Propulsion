@@ -266,12 +266,11 @@ end
 
 NozzleFlowProperties = NozzleFlowProperties4
 
-function variables(T::Type{NozzleFlowProperties})
-    [
-        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
-        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
+function variables(T::Type{NozzleFlowProperties{N}}) where N
+    vcat(
+        [variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_$(i)") .|> Symbol for i in 1:N]...,
         :F
-    ]
+    )
 end
 
 #precisa ser igual a DEF_PRESSURE_UNIT*DEF_AREA_UNIT!
