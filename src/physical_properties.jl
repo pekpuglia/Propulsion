@@ -251,7 +251,7 @@ end
 
 ##
 using StaticArrays
-#refactor
+#make wrapper for kwarg constructor that computes the number of sections
 export NozzleFlowProperties
 struct NozzleFlowProperties4{N} <: PhysicalProperties
     secs::SVector{N, Quasi1dimflowProperties}
@@ -315,11 +315,11 @@ function select_and_remove_dict_key_suffix(suff::String, dict)
     )
 end
 
-function NozzleFlowProperties4(data_dict::Dict)
+function NozzleFlowProperties4{N}(data_dict::Dict) where N
     
-    max_ind = maximum(parse(Int, last(split_res)) for split_res in split.(String.(keys(data_dict)), "_") if length(split_res) > 1)
+    # max_ind = maximum(parse(Int, last(split_res)) for split_res in split.(String.(keys(data_dict)), "_") if length(split_res) > 1)
 
-    dicts = (select_and_remove_dict_key_suffix("_$i", data_dict) for i in 1:max_ind)
+    dicts = (select_and_remove_dict_key_suffix("_$i", data_dict) for i in 1:N)
 
     NozzleFlowProperties(
         Quasi1dimflowProperties.(dicts),
