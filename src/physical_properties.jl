@@ -276,14 +276,15 @@ end
 #precisa ser igual a DEF_PRESSURE_UNIT*DEF_AREA_UNIT!
 const DEF_FORCE_UNIT = DEF_MASS_FLOW_UNIT * DEF_SPEED_UNIT
 
-units(::Type{NozzleFlowProperties}) = Dict(
+function units(T::Type{NozzleFlowProperties{N}}) where N
+    qfp_unit_dict = units(Quasi1dimflowProperties)
     Dict(
-        Symbol(string(pair.first)*suff) => pair.second 
-        for pair in Propulsion.units(Quasi1dimflowProperties) 
-        for suff in ["_1", "_2"]
-    )...,
-    :F => DEF_FORCE_UNIT
-)
+        Dict(
+            var => qfp_unit_dict[q1dfp_var] for (var, q1dfp_var) in zip(variables(T), repeat(variables(Quasi1dimflowProperties), N))
+        )...,
+        :F => DEF_FORCE_UNIT
+    )
+end
 
 function residues(nfp::NozzleFlowProperties)
     [
