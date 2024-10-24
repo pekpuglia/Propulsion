@@ -331,10 +331,9 @@ default_initial_guesses(::Type{NozzleFlowProperties}) = Dict(
     :gamma_2 => 1.4
 )
 
-function add_units(nfp::NozzleFlowProperties, unit_dict)
+function add_units(nfp::NozzleFlowProperties{N}, unit_dict) where N
     NozzleFlowProperties(
-        add_units(nfp.sec1, select_and_remove_dict_key_suffix("_1", unit_dict)),
-        add_units(nfp.sec2, select_and_remove_dict_key_suffix("_2", unit_dict)),
+        [add_units(seci, select_and_remove_dict_key_suffix("_$i", unit_dict)) for (i, seci) in enumerate(nfp.secs)],
         nfp.F * unit_dict[:F]
     )
 end
