@@ -304,8 +304,6 @@ function residues(nfp::NozzleFlowProperties{N}) where N
     )
 end
 
-# Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
-
 function Base.getindex(nfp::NozzleFlowProperties{N}, i::Int) where N
     nfp.secs[i]
 end
@@ -319,12 +317,12 @@ end
 
 function NozzleFlowProperties4(data_dict::Dict)
     
-    dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
-    dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
+    max_ind = maximum(parse(Int, last(split_res)) for split_res in split.(String.(keys(data_dict)), "_") if length(split_res) > 1)
+
+    dicts = (select_and_remove_dict_key_suffix("_$i", data_dict) for i in 1:max_ind)
 
     NozzleFlowProperties(
-        Quasi1dimflowProperties(dict1),
-        Quasi1dimflowProperties(dict2),
+        Quasi1dimflowProperties.(dicts),
         data_dict[:F]
     )
 end
