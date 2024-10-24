@@ -250,19 +250,21 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 ##
-#expand for N sections
+using StaticArrays
 #refactor
 export NozzleFlowProperties
-struct NozzleFlowProperties1 <: PhysicalProperties
-    secs::Vector{Quasi1dimflowProperties}
+struct NozzleFlowProperties4{N} <: PhysicalProperties
+    secs::SVector{N, Quasi1dimflowProperties}
     F
-    function NozzleFlowProperties1(secs::Vector{Quasi1dimflowProperties}, F::Real)
-        new(secs, F)
+    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Real)
+        new{length(secs)}(secs, F)
     end
-    function NozzleFlowProperties1(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
-        new(secs, F)
+    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
+        new{length(secs)}(secs, F)
     end
 end
+
+NozzleFlowProperties = NozzleFlowProperties4
 
 function variables(T::Type{NozzleFlowProperties})
     [
@@ -318,7 +320,7 @@ function select_and_remove_dict_key_suffix(suff::String, dict)
     )
 end
 
-function NozzleFlowProperties(data_dict::Dict)
+function NozzleFlowProperties4(data_dict::Dict)
     
     dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
     dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
