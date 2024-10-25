@@ -250,66 +250,62 @@ function residues(qp::Quasi1dimflowProperties)
 end
 
 ##
-#expand for N sections
-#refactor
+using StaticArrays
+#make wrapper for kwarg constructor that computes the number of sections
 export NozzleFlowProperties
-struct NozzleFlowProperties <: PhysicalProperties
-    sec1::Quasi1dimflowProperties
-    sec2::Quasi1dimflowProperties
+struct NozzleFlowProperties4{N} <: PhysicalProperties
+    secs::SVector{N, Quasi1dimflowProperties}
     F
-    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Real)
-        new(sec1, sec2, F)
+    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Real)
+        new{length(secs)}(secs, F)
     end
-    function NozzleFlowProperties(sec1::Quasi1dimflowProperties, sec2::Quasi1dimflowProperties, F::Unitful.Force)
-        new(sec1, sec2, F)
+    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
+        new{length(secs)}(secs, F)
     end
 end
 
-function variables(T::Type{NozzleFlowProperties})
-    [
-        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_1") .|> Symbol
-        variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_2") .|> Symbol
+NozzleFlowProperties = NozzleFlowProperties4
+
+function variables(T::Type{NozzleFlowProperties{N}}) where N
+    vcat(
+        [variables(Quasi1dimflowProperties) .|> string .|> (str -> str*"_$(i)") .|> Symbol for i in 1:N]...,
         :F
-    ]
+    )
 end
 
 #precisa ser igual a DEF_PRESSURE_UNIT*DEF_AREA_UNIT!
 const DEF_FORCE_UNIT = DEF_MASS_FLOW_UNIT * DEF_SPEED_UNIT
 
-units(::Type{NozzleFlowProperties}) = Dict(
+function units(T::Type{NozzleFlowProperties{N}}) where N
+    qfp_unit_dict = units(Quasi1dimflowProperties)
     Dict(
-        Symbol(string(pair.first)*suff) => pair.second 
-        for pair in Propulsion.units(Quasi1dimflowProperties) 
-        for suff in ["_1", "_2"]
-    )...,
-    :F => DEF_FORCE_UNIT
-)
-
-function residues(nfp::NozzleFlowProperties)
-    [
-        residues(nfp.sec1)
-        residues(nfp.sec2)
-        nfp.sec1.fp.cal_prop.gamma - nfp.sec2.fp.cal_prop.gamma
-        nfp.sec1.fp.cal_prop.mp.R - nfp.sec2.fp.cal_prop.mp.R
-        nfp.sec1.Astar - nfp.sec2.Astar
-        nfp.sec1.mdot - nfp.sec2.mdot
-        nfp.sec1.fp.T0 - nfp.sec2.fp.T0
-        nfp.F - (
-            nfp.sec2.mdot * nfp.sec2.fp.v - nfp.sec2.fp.cal_prop.mp.tp.P * nfp.sec2.A
-        ) + (
-            nfp.sec1.mdot * nfp.sec1.fp.v - nfp.sec1.fp.cal_prop.mp.tp.P * nfp.sec1.A
-        )
-    ]
+        Dict(
+            var => qfp_unit_dict[q1dfp_var] for (var, q1dfp_var) in zip(variables(T), repeat(variables(Quasi1dimflowProperties), N))
+        )...,
+        :F => DEF_FORCE_UNIT
+    )
 end
 
-# Base.getproperty(nfp::NozzleFlowProperties, s::Symbol) = getfield(nfp, s)
+function residues(nfp::NozzleFlowProperties{N}) where N
+    vcat(
+        (residues(sec) for sec in nfp.secs)...,
+        ([
+            nfp.secs[1].fp.cal_prop.gamma - seci.fp.cal_prop.gamma
+            nfp.secs[1].fp.cal_prop.mp.R - seci.fp.cal_prop.mp.R
+            nfp.secs[1].Astar - seci.Astar
+            nfp.secs[1].mdot - seci.mdot
+            nfp.secs[1].fp.T0 - seci.fp.T0
+        ] for seci in nfp.secs[2:end])...,
+        nfp.F - (
+            nfp.secs[end].mdot * nfp.secs[end].fp.v - nfp.secs[end].fp.cal_prop.mp.tp.P * nfp.secs[end].A
+        ) + (
+            nfp.secs[1].mdot * nfp.secs[1].fp.v - nfp.secs[1].fp.cal_prop.mp.tp.P * nfp.secs[1].A
+        )
+    )
+end
 
-function Base.getindex(nfp::NozzleFlowProperties, i::Int)
-    if !(i == 1 || i == 2)
-        throw(BoundsError(nfp, i))
-    end
-
-    (i == 1) ? nfp.sec1 : nfp.sec2
+function Base.getindex(nfp::NozzleFlowProperties{N}, i::Int) where N
+    nfp.secs[i]
 end
 
 function select_and_remove_dict_key_suffix(suff::String, dict)
@@ -319,14 +315,14 @@ function select_and_remove_dict_key_suffix(suff::String, dict)
     )
 end
 
-function NozzleFlowProperties(data_dict::Dict)
+function NozzleFlowProperties4{N}(data_dict::Dict) where N
     
-    dict1 = select_and_remove_dict_key_suffix("_1", data_dict)
-    dict2 = select_and_remove_dict_key_suffix("_2", data_dict)
+    # max_ind = maximum(parse(Int, last(split_res)) for split_res in split.(String.(keys(data_dict)), "_") if length(split_res) > 1)
+
+    dicts = (select_and_remove_dict_key_suffix("_$i", data_dict) for i in 1:N)
 
     NozzleFlowProperties(
-        Quasi1dimflowProperties(dict1),
-        Quasi1dimflowProperties(dict2),
+        Quasi1dimflowProperties.(dicts),
         data_dict[:F]
     )
 end
@@ -335,10 +331,9 @@ default_initial_guesses(::Type{NozzleFlowProperties}) = Dict(
     :gamma_2 => 1.4
 )
 
-function add_units(nfp::NozzleFlowProperties, unit_dict)
+function add_units(nfp::NozzleFlowProperties{N}, unit_dict) where N
     NozzleFlowProperties(
-        add_units(nfp.sec1, select_and_remove_dict_key_suffix("_1", unit_dict)),
-        add_units(nfp.sec2, select_and_remove_dict_key_suffix("_2", unit_dict)),
+        [add_units(seci, select_and_remove_dict_key_suffix("_$i", unit_dict)) for (i, seci) in enumerate(nfp.secs)],
         nfp.F * unit_dict[:F]
     )
 end
