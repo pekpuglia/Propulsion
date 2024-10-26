@@ -253,18 +253,16 @@ end
 using StaticArrays
 #make wrapper for kwarg constructor that computes the number of sections
 export NozzleFlowProperties
-struct NozzleFlowProperties4{N} <: PhysicalProperties
+struct NozzleFlowProperties{N} <: PhysicalProperties
     secs::SVector{N, Quasi1dimflowProperties}
     F
-    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Real)
+    function NozzleFlowProperties(secs::Vector{Quasi1dimflowProperties}, F::Real)
         new{length(secs)}(secs, F)
     end
-    function NozzleFlowProperties4(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
+    function NozzleFlowProperties(secs::Vector{Quasi1dimflowProperties}, F::Unitful.Force)
         new{length(secs)}(secs, F)
     end
 end
-
-NozzleFlowProperties = NozzleFlowProperties4
 
 function variables(T::Type{NozzleFlowProperties{N}}) where N
     vcat(
@@ -294,7 +292,7 @@ function residues(nfp::NozzleFlowProperties{N}) where N
             nfp.secs[1].fp.cal_prop.mp.R - seci.fp.cal_prop.mp.R
             nfp.secs[1].Astar - seci.Astar
             nfp.secs[1].mdot - seci.mdot
-            nfp.secs[1].fp.T0 - seci.fp.T0
+            nfp.secs[1].fp.P0 - seci.fp.P0  
         ] for seci in nfp.secs[2:end])...,
         nfp.F - (
             nfp.secs[end].mdot * nfp.secs[end].fp.v - nfp.secs[end].fp.cal_prop.mp.tp.P * nfp.secs[end].A
@@ -308,6 +306,13 @@ function Base.getindex(nfp::NozzleFlowProperties{N}, i::Int) where N
     nfp.secs[i]
 end
 
+function Base.getindex(nfp::NozzleFlowProperties{N}, s::Symbol) where N
+    if s == :F
+        return nfp.F
+    end
+    [sec[s] for sec in nfp.secs]
+end
+
 function select_and_remove_dict_key_suffix(suff::String, dict)
     Dict(
         Symbol(string(pair.first)[1:(end-2)]) => pair.second
@@ -315,7 +320,7 @@ function select_and_remove_dict_key_suffix(suff::String, dict)
     )
 end
 
-function NozzleFlowProperties4{N}(data_dict::Dict) where N
+function NozzleFlowProperties{N}(data_dict::Dict) where N
     
     # max_ind = maximum(parse(Int, last(split_res)) for split_res in split.(String.(keys(data_dict)), "_") if length(split_res) > 1)
 
